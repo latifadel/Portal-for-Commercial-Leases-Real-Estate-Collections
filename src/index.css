@@ -1,0 +1,147 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================================
+   CSS CUSTOM PROPERTIES — Najdi Design Tokens
+   ============================================================ */
+:root {
+  --color-primary-sand:   #C9A66B;
+  --color-sand-hover:     #B89255;
+  --color-deep-brown:     #302219;
+  --color-najdi-brown:    #4A3426;
+  --color-terracotta:     #A65F46;
+  --color-cream-bg:       #F7F1E7;
+  --color-card-bg:        #FFFDF8;
+  --color-muted-gold:     #B89255;
+
+  /* Najdi geometric SVG pattern for section headers (light bg version) */
+  --najdi-pattern-light: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='24'%3E%3Cpolygon points='24,1 32,10 16,10' fill='%234A3426' opacity='0.06'/%3E%3Cpolygon points='48,1 56,10 40,10' fill='%234A3426' opacity='0.06'/%3E%3Crect x='20' y='12' width='8' height='2' rx='1' fill='%23C9A66B' opacity='0.08'/%3E%3C/svg%3E");
+
+  /* Najdi geometric SVG pattern for dark sidebar/login card */
+  --najdi-pattern-dark: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='24'%3E%3Cpolygon points='24,1 32,10 16,10' fill='%23C9A66B' opacity='0.05'/%3E%3Cpolygon points='48,1 56,10 40,10' fill='%23C9A66B' opacity='0.05'/%3E%3Cpolygon points='0,1 8,10 -8,10' fill='%23C9A66B' opacity='0.05'/%3E%3Crect x='20' y='12' width='8' height='2' rx='1' fill='%23C9A66B' opacity='0.06'/%3E%3C/svg%3E");
+}
+
+/* ============================================================
+   BASE STYLES
+   ============================================================ */
+@layer base {
+  body {
+    background-color: #F7F1E7;
+    color: #4A3426;
+    font-family: 'IBM Plex Sans Arabic', 'Inter', system-ui, sans-serif;
+  }
+  .dark body {
+    background-color: #1a0f09;
+    color: #f2ece8;
+  }
+}
+
+/* ============================================================
+   REUSABLE UTILITIES
+   ============================================================ */
+@layer components {
+  /* Primary sandy action button */
+  .btn-primary {
+    background-color: #C9A66B;
+    color: #302219;
+    font-weight: 700;
+    border-radius: 0.75rem;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    transition: all 0.15s ease-in-out;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  }
+  .btn-primary:hover {
+    background-color: #B89255;
+  }
+  .btn-primary:active {
+    transform: scale(0.98);
+  }
+
+  /* Secondary ghost button */
+  .btn-secondary {
+    background-color: #FFFDF8;
+    color: #4A3426;
+    border: 1px solid #e0cfb8;
+    font-weight: 600;
+    border-radius: 0.75rem;
+    padding: 0.5rem 1rem;
+    font-size: 0.75rem;
+    transition: all 0.15s ease-in-out;
+  }
+  .btn-secondary:hover {
+    background-color: #efe5d4;
+  }
+
+  /* Najdi geometric page header band */
+  .najdi-header-band {
+    position: relative;
+    overflow: hidden;
+  }
+  .najdi-header-band::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: var(--najdi-pattern-light);
+    background-repeat: repeat;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .najdi-header-band > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Dark variant for sidebar / login card */
+  .najdi-dark-pattern {
+    position: relative;
+    overflow: hidden;
+  }
+  .najdi-dark-pattern::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: var(--najdi-pattern-dark);
+    background-repeat: repeat;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .najdi-dark-pattern > * {
+    position: relative;
+    z-index: 1;
+  }
+}
+
+/* ============================================================
+   ANIMATIONS
+   ============================================================ */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes scaleUp {
+  from { opacity: 0; transform: scale(0.97); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+.animate-fadeIn  { animation: fadeIn  0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+.animate-scaleUp { animation: scaleUp 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+/* ============================================================
+   PRINT OPTIMISATION
+   ============================================================ */
+@media print {
+  aside, header, nav, button, .print\:hidden {
+    display: none !important;
+  }
+  body, main {
+    background: #ffffff !important;
+    color: #000000 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  .print\:m-0 { margin: 0 !important; }
+  .print\:p-0 { padding: 0 !important; }
+}
