@@ -87,28 +87,18 @@ interface DataContextType {
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
-const LOCAL_CACHE_KEY = 'prop_mgmt_supabase_cache';
+const getCacheKey = (userId?: string) => (userId ? `prop_mgmt_supabase_cache_${userId}` : 'prop_mgmt_supabase_cache_guest');
 
 export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { currentUser } = useAuth();
 
-  // Load initial state from local cache or clean empty collections (NO demo/mock data)
-  const cachedData = useMemo<Partial<SupabasePropertyData>>(() => {
-    try {
-      const saved = localStorage.getItem(LOCAL_CACHE_KEY);
-      return saved ? JSON.parse(saved) : {};
-    } catch {
-      return {};
-    }
-  }, []);
-
-  const [tenants, setTenants] = useState<Tenant[]>(() => cachedData.tenants || []);
-  const [offices, setOffices] = useState<Office[]>(() => cachedData.offices || []);
-  const [contracts, setContracts] = useState<Contract[]>(() => cachedData.contracts || []);
-  const [payments, setPayments] = useState<PaymentInstallment[]>(() => cachedData.payments || []);
-  const [notifications, setNotifications] = useState<SystemNotification[]>(() => cachedData.notifications || []);
-  const [activityLogs, setActivityLogs] = useState<ActivityLog[]>(() => cachedData.activityLogs || []);
-  const [settings, setSettings] = useState<SystemSettings>(() => cachedData.settings || initialSettings);
+  const [tenants, setTenants] = useState<Tenant[]>([]);
+  const [offices, setOffices] = useState<Office[]>([]);
+  const [contracts, setContracts] = useState<Contract[]>([]);
+  const [payments, setPayments] = useState<PaymentInstallment[]>([]);
+  const [notifications, setNotifications] = useState<SystemNotification[]>([]);
+  const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
+  const [settings, setSettings] = useState<SystemSettings>(initialSettings);
 
   const [cloudStatus, setCloudStatus] = useState<'synced' | 'saving' | 'offline' | 'error'>('synced');
   const [lastSyncedAt, setLastSyncedAt] = useState<string>(() => new Date().toLocaleTimeString());
@@ -123,8 +113,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       : new Date().toISOString().split('T')[0];
   }, [settings.useSimulatedDate, settings.simulatedDate]);
 
-  // Sync to local cache as offline fallback
+  // Sync to local cache as offline fallback per user
   useEffect(() => {
+    if (!currentUser) return;
     try {
       const payload: SupabasePropertyData = {
         tenants,
@@ -136,21 +127,58 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         notifications,
         updatedAt: new Date().toISOString(),
       };
-      localStorage.setItem(LOCAL_CACHE_KEY, JSON.stringify(payload));
+      localStorage.setItem(getCacheKey(currentUser.id), JSON.stringify(payload));
     } catch (e) {
       // ignore storage quota errors
     }
-  }, [tenants, offices, contracts, payments, settings, activityLogs, notifications]);
+  }, [currentUser, tenants, offices, contracts, payments, settings, activityLogs, notifications]);
 
-  // 1. Initial Cloud Data Fetch & Realtime Subscription
+  // 1. Initial Cloud Data Fetch & Realtime Subscription per user
   useEffect(() => {
-    if (!currentUser) return;
+    if (!currentUser) {
+      setTenants([]);
+      setOffices([]);
+      setContracts([]);
+      setPayments([]);
+      setNotifications([]);
+      setActivityLogs([]);
+      setSettings(initialSettings);
+      isInitialLoadDone.current = false;
+      return;
+    }
 
+    isInitialLoadDone.current = false;
     let isMounted = true;
+
+    // Load from user-specific local cache first for instant render
+    try {
+      const saved = localStorage.getItem(getCacheKey(currentUser.id));
+      if (saved) {
+        const cached = JSON.parse(saved);
+        if (Array.isArray(cached.tenants)) setTenants(cached.tenants);
+        if (Array.isArray(cached.offices)) setOffices(cached.offices);
+        if (Array.isArray(cached.contracts)) setContracts(cached.contracts);
+        if (Array.isArray(cached.payments)) setPayments(cached.payments);
+        if (cached.settings) setSettings(prev => ({ ...prev, ...cached.settings }));
+        if (Array.isArray(cached.activityLogs)) setActivityLogs(cached.activityLogs);
+        if (Array.isArray(cached.notifications)) setNotifications(cached.notifications);
+      } else {
+        // Fresh user: start with empty data
+        setTenants([]);
+        setOffices([]);
+        setContracts([]);
+        setPayments([]);
+        setNotifications([]);
+        setActivityLogs([]);
+        setSettings(initialSettings);
+      }
+    } catch {
+      // ignore
+    }
 
     const fetchFromSupabase = async () => {
       setCloudStatus('saving');
-      const cloudData = await loadPropertyDataFromSupabase();
+      const cloudData = await loadPropertyDataFromSupabase(currentUser.id);
       if (!isMounted) return;
 
       if (cloudData) {
@@ -166,21 +194,20 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setLastSyncedAt(timeStr);
         setCloudStatus('synced');
       } else {
-        // No cloud record yet - create initial empty store in Supabase
-        await savePropertyDataToSupabase(
-          {
-            tenants,
-            offices,
-            contracts,
-            payments,
-            settings,
-            activityLogs,
-            notifications,
-            updatedAt: new Date().toISOString(),
-            updatedBy: currentUser.name,
-          },
-          currentUser.id
-        );
+        // No cloud record yet for this user - create initial clean store in Supabase
+        const initialPayload: SupabasePropertyData = {
+          tenants: [],
+          offices: [],
+          contracts: [],
+          payments: [],
+          settings: initialSettings,
+          activityLogs: [],
+          notifications: [],
+          updatedAt: new Date().toISOString(),
+          updatedBy: currentUser.name,
+        };
+
+        await savePropertyDataToSupabase(initialPayload, currentUser.id);
         setCloudStatus('synced');
       }
 
@@ -189,8 +216,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     fetchFromSupabase();
 
-    // Subscribe to realtime changes (multi-device instant sync across iPhone & PC)
-    const unsubscribe = subscribeToRealtimePropertyData((incoming: SupabasePropertyData) => {
+    // Subscribe to realtime changes for this user's private data across all their devices
+    const unsubscribe = subscribeToRealtimePropertyData(currentUser.id, (incoming: SupabasePropertyData) => {
       if (!isMounted) return;
       if (Array.isArray(incoming.tenants)) setTenants(incoming.tenants);
       if (Array.isArray(incoming.offices)) setOffices(incoming.offices);
@@ -210,7 +237,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, [currentUser]);
 
-  // 2. Auto-save to Supabase with debounce whenever state changes
+  // 2. Auto-save to Supabase with debounce whenever state changes for currentUser
   useEffect(() => {
     if (!currentUser || !isInitialLoadDone.current) return;
 
@@ -238,11 +265,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }, 1200);
 
     return () => clearTimeout(timer);
-  }, [tenants, offices, contracts, payments, settings]);
+  }, [currentUser, tenants, offices, contracts, payments, settings]);
 
   const refreshFromCloud = async () => {
+    if (!currentUser) return;
     setCloudStatus('saving');
-    const cloudData = await loadPropertyDataFromSupabase();
+    const cloudData = await loadPropertyDataFromSupabase(currentUser.id);
     if (cloudData) {
       if (Array.isArray(cloudData.tenants)) setTenants(cloudData.tenants);
       if (Array.isArray(cloudData.offices)) setOffices(cloudData.offices);

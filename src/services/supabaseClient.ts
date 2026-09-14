@@ -32,17 +32,18 @@ export interface SupabasePropertyData {
   updatedBy?: string;
 }
 
-const RECORD_KEY = 'commercial_building_main';
+export const getRecordKey = (userId?: string) => (userId ? `user_property_${userId}` : 'commercial_building_main');
 
 /**
- * Load property data from Supabase cloud database
+ * Load property data from Supabase cloud database for a specific user
  */
-export const loadPropertyDataFromSupabase = async (): Promise<SupabasePropertyData | null> => {
+export const loadPropertyDataFromSupabase = async (userId?: string): Promise<SupabasePropertyData | null> => {
   try {
+    const recordKey = getRecordKey(userId);
     const { data, error } = await supabase
       .from('property_records')
       .select('payload, updated_at')
-      .eq('record_key', RECORD_KEY)
+      .eq('record_key', recordKey)
       .maybeSingle();
 
     if (error) {
@@ -62,16 +63,17 @@ export const loadPropertyDataFromSupabase = async (): Promise<SupabasePropertyDa
 };
 
 /**
- * Save property data to Supabase cloud database with upsert
+ * Save property data to Supabase cloud database with upsert for a specific user
  */
 export const savePropertyDataToSupabase = async (
   payload: SupabasePropertyData,
   userId?: string
 ): Promise<{ success: boolean; error?: string }> => {
   try {
+    const recordKey = getRecordKey(userId);
     const { error } = await supabase.from('property_records').upsert(
       {
-        record_key: RECORD_KEY,
+        record_key: recordKey,
         payload: payload,
         user_id: userId || null,
         updated_at: new Date().toISOString(),
@@ -92,20 +94,22 @@ export const savePropertyDataToSupabase = async (
 };
 
 /**
- * Subscribe to realtime changes so iPhone & PC stay in sync automatically
+ * Subscribe to realtime changes for a specific user so iPhone & PC stay in sync automatically
  */
 export const subscribeToRealtimePropertyData = (
+  userId: string | undefined,
   onUpdate: (data: SupabasePropertyData) => void
 ) => {
+  const recordKey = getRecordKey(userId);
   const channel = supabase
-    .channel('property_records_changes')
+    .channel(`property_records_${recordKey}`)
     .on(
       'postgres_changes',
       {
         event: '*',
         schema: 'public',
         table: 'property_records',
-        filter: `record_key=eq.${RECORD_KEY}`,
+        filter: `record_key=eq.${recordKey}`,
       },
       payload => {
         if (payload.new && (payload.new as any).payload) {
