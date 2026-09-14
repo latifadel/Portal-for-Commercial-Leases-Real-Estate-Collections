@@ -341,7 +341,8 @@ export function calculateBuildingFinancialSummary(params: {
   const { tenants, offices, contracts, payments, currentDateStr } = params;
 
   const totalTenants = tenants.length;
-  const activeContracts = contracts.filter(c => c.status === 'ACTIVE' || c.status === 'EXPIRING_SOON');
+  const validContracts = contracts.filter(c => c.status !== 'CANCELLED');
+  const activeContracts = validContracts.filter(c => c.status === 'ACTIVE' || c.status === 'EXPIRING_SOON');
   const activeLeases = activeContracts.length;
 
   const totalOffices = offices.length;
@@ -355,7 +356,7 @@ export function calculateBuildingFinancialSummary(params: {
   let totalOutstandingRent = 0;
   let totalOverdueRent = 0;
 
-  contracts.forEach(c => {
+  validContracts.forEach(c => {
     const fin = calculateContractFinancials(c, payments, currentDateStr);
     totalBaseRent += fin.baseRent;
     totalVat += fin.vatAmount;
@@ -365,8 +366,10 @@ export function calculateBuildingFinancialSummary(params: {
     totalOverdueRent += fin.overdueAmount;
   });
 
+  const validContractIds = new Set(validContracts.map(c => c.id));
   const overdueInstallments = payments.filter(
-    p => (p.remainingAmount > 0 || (p.totalAmount - (p.paidAmount || 0)) > 0) &&
+    p => validContractIds.has(p.contractId) &&
+         (p.remainingAmount > 0 || (p.totalAmount - (p.paidAmount || 0)) > 0) &&
          calculateDaysOverdue(p.dueDate, currentDateStr) > 0
   );
 

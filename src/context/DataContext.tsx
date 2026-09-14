@@ -52,6 +52,7 @@ interface DataContextType {
   addContract: (contract: Omit<Contract, 'id' | 'createdAt' | 'vatAmount' | 'totalRent' | 'status'> & { customInstallments?: PaymentInstallment[] }) => string;
   updateContract: (id: string, updates: Partial<Contract>) => void;
   cancelContract: (id: string, reason?: string) => void;
+  deleteContract: (id: string) => void;
   renewContract: (contractId: string, newStartDate: string, newEndDate: string, newBaseRent: number) => string;
   attachContractDoc: (contractId: string, doc: Omit<ContractAttachment, 'id' | 'uploadedAt'>) => void;
 
@@ -418,6 +419,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setPayments(prev => [...prev, ...generatedInstallments]);
 
     // Mark office as OCCUPIED
+    const calculatedAnnualRent =
+      contractData.annualRent ||
+      (contractData.durationMonths > 0
+        ? Math.round((contractData.baseRent / (contractData.durationMonths / 12)) * 100) / 100
+        : contractData.baseRent);
+
     setOffices(prev =>
       prev.map(o =>
         o.id === contractData.officeId
@@ -426,7 +433,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
               status: 'OCCUPIED',
               currentTenantId: contractData.tenantId,
               currentContractId: id,
-              annualRent: contractData.baseRent,
+              annualRent: calculatedAnnualRent,
             }
           : o
       )
@@ -461,27 +468,49 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     logActivity('CONTRACT_UPDATED', `Updated contract ${id}`, `تعديل العقد ${id}`, 'CONTRACT', id);
   };
 
-  const cancelContract = (id: string, reason?: string) => {
+  const deleteContract = (id: string) => {
     const contract = contracts.find(c => c.id === id);
     if (!contract) return;
 
-    setContracts(prev =>
-      prev.map(c =>
-        c.id === id
-          ? { ...c, status: 'CANCELLED' as const, notes: `${c.notes || ''} [Cancelled: ${reason || 'N/A'}]` }
-          : c
-      )
-    );
+    // 1. Remove the contract completely
+    setContracts(prev => prev.filter(c => c.id !== id));
 
+    // 2. Remove all associated payments
+    setPayments(prev => prev.filter(p => p.contractId !== id));
+
+    // 3. Free the office back to VACANT
     setOffices(prev =>
       prev.map(o =>
-        o.id === contract.officeId && o.currentContractId === id
+        o.id === contract.officeId && (o.currentContractId === id || !o.currentContractId)
           ? { ...o, status: 'VACANT', currentTenantId: undefined, currentContractId: undefined }
           : o
       )
     );
 
-    logActivity('CONTRACT_CANCELLED', `Cancelled contract ${id}`, `إلغاء العقد ${id}`, 'CONTRACT', id);
+    // 4. Update tenant's officeIds
+    setTenants(prev =>
+      prev.map(t => {
+        if (t.id === contract.tenantId && t.officeIds) {
+          const hasOtherContract = contracts.some(
+            c => c.id !== id && c.tenantId === contract.tenantId && c.officeId === contract.officeId && c.status !== 'CANCELLED'
+          );
+          if (!hasOtherContract) {
+            return {
+              ...t,
+              officeIds: t.officeIds.filter(oid => oid !== contract.officeId),
+            };
+          }
+        }
+        return t;
+      })
+    );
+
+    logActivity('CONTRACT_CANCELLED', `Deleted contract ${id}`, `حذف العقد ${id}`, 'CONTRACT', id);
+  };
+
+  const cancelContract = (id: string, reason?: string) => {
+    // Cancelling or deleting completely removes the contract, its payments, and frees the office
+    deleteContract(id);
   };
 
   const renewContract = (contractId: string, newStartDate: string, newEndDate: string, newBaseRent: number): string => {
@@ -703,6 +732,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         addContract,
         updateContract,
         cancelContract,
+        deleteContract,
         renewContract,
         attachContractDoc,
         recordPayment,

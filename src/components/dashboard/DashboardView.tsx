@@ -47,13 +47,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
     const occupancyRate = totalOffices > 0 ? Math.round((occupiedOffices / totalOffices) * 100) : 0;
 
     const activeTenants = tenants.filter(t => t.status === 'ACTIVE').length;
-    const activeContracts = contracts.filter(c => c.status === 'ACTIVE' || c.status === 'EXPIRING_SOON').length;
+    const validContracts = contracts.filter(c => c.status !== 'CANCELLED');
+    const validContractIds = new Set(validContracts.map(c => c.id));
+    const activeContracts = validContracts.filter(c => c.status === 'ACTIVE' || c.status === 'EXPIRING_SOON').length;
 
-    const totalContractValueWithVAT = contracts.reduce((sum, c) => sum + (c.totalRent || 0), 0);
-    const totalCollected = payments.reduce((sum, p) => sum + (p.paidAmount || 0), 0);
-    const totalOutstanding = payments.reduce((sum, p) => sum + (p.remainingAmount || 0), 0);
+    const totalContractValueWithVAT = validContracts.reduce((sum, c) => sum + (c.totalRent || 0), 0);
+    const validPayments = payments.filter(p => validContractIds.has(p.contractId));
+    const totalCollected = validPayments.reduce((sum, p) => sum + (p.paidAmount || 0), 0);
+    const totalOutstanding = validPayments.reduce((sum, p) => sum + (p.remainingAmount || 0), 0);
 
-    const overdueList = payments.filter(
+    const overdueList = validPayments.filter(
       p => p.remainingAmount > 0 && (p.status === 'OVERDUE' || calculateDaysOverdue(p.dueDate, effectiveDate) > 0)
     );
     const totalOverdue = overdueList.reduce((sum, p) => sum + p.remainingAmount, 0);

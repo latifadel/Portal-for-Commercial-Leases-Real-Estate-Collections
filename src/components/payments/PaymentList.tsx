@@ -70,11 +70,18 @@ export const PaymentList: React.FC<PaymentListProps> = ({ onNavigate, selectedIn
     });
   };
 
+  // Valid payments from active/non-cancelled contracts
+  const validPayments = useMemo(() => {
+    const validContracts = contracts.filter(c => c.status !== 'CANCELLED');
+    const validContractIds = new Set(validContracts.map(c => c.id));
+    return payments.filter(p => validContractIds.has(p.contractId));
+  }, [payments, contracts]);
+
   // Financial Summary Cards
   const stats = useMemo(() => {
-    const totalCollected = payments.reduce((sum, p) => sum + (p.paidAmount || 0), 0);
-    const totalOutstanding = payments.reduce((sum, p) => sum + (p.remainingAmount || 0), 0);
-    const overdueList = payments.filter(
+    const totalCollected = validPayments.reduce((sum, p) => sum + (p.paidAmount || 0), 0);
+    const totalOutstanding = validPayments.reduce((sum, p) => sum + (p.remainingAmount || 0), 0);
+    const overdueList = validPayments.filter(
       p => p.remainingAmount > 0 && (p.status === 'OVERDUE' || calculateDaysOverdue(p.dueDate, effectiveDate) > 0)
     );
     const totalOverdue = overdueList.reduce((sum, p) => sum + p.remainingAmount, 0);
@@ -85,10 +92,10 @@ export const PaymentList: React.FC<PaymentListProps> = ({ onNavigate, selectedIn
       totalOverdue,
       overdueCount: overdueList.length,
     };
-  }, [payments, effectiveDate]);
+  }, [validPayments, effectiveDate]);
 
   const filteredPayments = useMemo(() => {
-    return payments
+    return validPayments
       .filter(p => {
         const isOverdue = p.remainingAmount > 0 && (p.status === 'OVERDUE' || calculateDaysOverdue(p.dueDate, effectiveDate) > 0);
         const isPaid = p.status === 'PAID' || p.remainingAmount === 0;
@@ -114,7 +121,7 @@ export const PaymentList: React.FC<PaymentListProps> = ({ onNavigate, selectedIn
         return matchesQuery;
       })
       .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
-  }, [payments, tenants, offices, searchQuery, statusFilter, tenantFilter, effectiveDate]);
+  }, [validPayments, tenants, offices, searchQuery, statusFilter, tenantFilter, effectiveDate]);
 
   return (
     <div className="space-y-6">

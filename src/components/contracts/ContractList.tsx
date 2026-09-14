@@ -25,7 +25,7 @@ interface ContractListProps {
 }
 
 export const ContractList: React.FC<ContractListProps> = ({ onNavigate, selectedContractId }) => {
-  const { contracts, tenants, offices, payments, settings, effectiveDate, cancelContract } = useData();
+  const { contracts, tenants, offices, payments, settings, effectiveDate, deleteContract } = useData();
   const { language, t } = useLanguage();
   const { isAdmin } = useAuth();
 
@@ -62,8 +62,12 @@ export const ContractList: React.FC<ContractListProps> = ({ onNavigate, selected
     });
   };
 
+  const activeContractsList = useMemo(() => {
+    return contracts.filter(c => c.status !== 'CANCELLED');
+  }, [contracts]);
+
   const filteredContracts = useMemo(() => {
-    return contracts.filter(contract => {
+    return activeContractsList.filter(contract => {
       const matchesStatus =
         statusFilter === 'ALL' ? true : contract.status === statusFilter;
 
@@ -80,7 +84,7 @@ export const ContractList: React.FC<ContractListProps> = ({ onNavigate, selected
 
       return matchesStatus && matchesQuery;
     });
-  }, [contracts, tenants, offices, searchQuery, statusFilter]);
+  }, [activeContractsList, tenants, offices, searchQuery, statusFilter]);
 
   return (
     <div className="space-y-6">
@@ -93,7 +97,7 @@ export const ContractList: React.FC<ContractListProps> = ({ onNavigate, selected
             </div>
             <span>{t('contracts')}</span>
             <span className="text-xs font-sans font-semibold px-2.5 py-0.5 rounded-full bg-sand-200/70 dark:bg-najdi-800 text-najdi-800 dark:text-cream-200">
-              {contracts.length}
+              {activeContractsList.length}
             </span>
           </h2>
           <p className="text-xs text-sand-500 dark:text-sand-400 mt-1">
@@ -310,17 +314,17 @@ export const ContractList: React.FC<ContractListProps> = ({ onNavigate, selected
         onClose={() => setContractToDelete(null)}
         onConfirm={() => {
           if (contractToDelete) {
-            cancelContract(contractToDelete.id);
+            deleteContract(contractToDelete.id);
             setContractToDelete(null);
           }
         }}
-        title={t('cancel_contract')}
+        title={language === 'ar' ? 'حذف العقد' : 'Delete Contract'}
         message={
           language === 'ar'
-            ? `هل أنت متأكد من رغبتك في إلغاء العقد "${contractToDelete?.id}"؟`
-            : `Are you sure you want to cancel contract "${contractToDelete?.id}"?`
+            ? `هل أنت متأكد من رغبتك في حذف العقد "${contractToDelete?.id}" نهائياً؟ سيتم إلغاء ربط الوحدة وتحريرها، وإزالة كافة الدفعات المرتبطة من التقارير وصفحات النظام.`
+            : `Are you sure you want to permanently delete contract "${contractToDelete?.id}"? The office unit will be freed and all associated payments will be removed from reports and views.`
         }
-        confirmText={language === 'ar' ? 'إلغاء العقد' : 'Cancel Contract'}
+        confirmText={language === 'ar' ? 'حذف العقد نهائياً' : 'Delete Contract'}
         variant="danger"
       />
 

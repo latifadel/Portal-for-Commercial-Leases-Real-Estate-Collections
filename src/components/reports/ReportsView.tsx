@@ -88,36 +88,38 @@ export const ReportsView: React.FC = () => {
 
   // --- 1. Tenant Lease Details Data Rows ---
   const tenantStatementRows = useMemo(() => {
-    return contracts.map((contract, index) => {
-      const tenant = tenants.find(t => t.id === contract.tenantId);
-      const office = offices.find(o => o.id === contract.officeId);
-      const fin = calculateContractFinancials(contract, payments, effectiveDate);
+    return contracts
+      .filter(c => c.status !== 'CANCELLED')
+      .map((contract, index) => {
+        const tenant = tenants.find(t => t.id === contract.tenantId);
+        const office = offices.find(o => o.id === contract.officeId);
+        const fin = calculateContractFinancials(contract, payments, effectiveDate);
 
-      return {
-        index: index + 1,
-        contractId: contract.id,
-        tenantId: contract.tenantId,
-        tenantName: tenant?.name || 'N/A',
-        tenantNameAr: tenant?.nameAr || tenant?.name || 'N/A',
-        officeId: contract.officeId,
-        officeNumber: office?.officeNumber || 'Unit',
-        floorLabel: office?.floor ? `Floor ${office.floor}` : undefined,
-        startDate: contract.startDate,
-        endDate: contract.endDate,
-        periodString: `${formatDate(contract.startDate, 'dd/MM/yyyy')} - ${formatDate(contract.endDate, 'dd/MM/yyyy')}`,
-        durationMonths: contract.durationMonths,
-        paymentFrequency: contract.paymentFrequency,
-        frequencyLabel: formatPaymentFrequency(contract.paymentFrequency, language),
-        baseRent: fin.baseRent,
-        vatRate: fin.vatRate,
-        vatAmount: fin.vatAmount,
-        totalRentWithVat: fin.totalRentWithVat,
-        rentReceived: fin.rentReceived,
-        outstandingBalance: fin.outstandingBalance,
-        overdueAmount: fin.overdueAmount,
-        status: contract.status,
-      };
-    });
+        return {
+          index: index + 1,
+          contractId: contract.id,
+          tenantId: contract.tenantId,
+          tenantName: tenant?.name || 'N/A',
+          tenantNameAr: tenant?.nameAr || tenant?.name || 'N/A',
+          officeId: contract.officeId,
+          officeNumber: office?.officeNumber || 'Unit',
+          floorLabel: office?.floor ? `Floor ${office.floor}` : undefined,
+          startDate: contract.startDate,
+          endDate: contract.endDate,
+          periodString: `${formatDate(contract.startDate, 'dd/MM/yyyy')} - ${formatDate(contract.endDate, 'dd/MM/yyyy')}`,
+          durationMonths: contract.durationMonths,
+          paymentFrequency: contract.paymentFrequency,
+          frequencyLabel: formatPaymentFrequency(contract.paymentFrequency, language),
+          baseRent: fin.baseRent,
+          vatRate: fin.vatRate,
+          vatAmount: fin.vatAmount,
+          totalRentWithVat: fin.totalRentWithVat,
+          rentReceived: fin.rentReceived,
+          outstandingBalance: fin.outstandingBalance,
+          overdueAmount: fin.overdueAmount,
+          status: contract.status,
+        };
+      });
   }, [contracts, tenants, offices, payments, effectiveDate, language]);
 
   // Filtered Tenant Statement Rows
@@ -167,7 +169,11 @@ export const ReportsView: React.FC = () => {
 
   // --- 2. Payment Schedule / Collections Rows ---
   const scheduleRows = useMemo(() => {
+    const validContracts = contracts.filter(c => c.status !== 'CANCELLED');
+    const validContractIds = new Set(validContracts.map(c => c.id));
+
     return payments
+      .filter(inst => validContractIds.has(inst.contractId))
       .map(inst => {
         const tenant = tenants.find(t => t.id === inst.tenantId);
         const office = offices.find(o => o.id === inst.officeId);

@@ -65,7 +65,8 @@ export interface Contract {
   startDate: string; // YYYY-MM-DD
   endDate: string; // YYYY-MM-DD
   durationMonths: number;
-  baseRent: number; // SAR before VAT
+  annualRent?: number; // Base annual rent in SAR / year
+  baseRent: number; // Total SAR before VAT across entire contract duration
   vatRate: number; // e.g. 0.15 (15%)
   vatAmount: number; // calculated SAR
   totalRent: number; // baseRent + vatAmount
