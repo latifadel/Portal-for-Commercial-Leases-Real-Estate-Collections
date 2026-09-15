@@ -18,11 +18,13 @@ import {
   Edit2,
   Receipt,
   RotateCcw,
+  Trash2,
 } from 'lucide-react';
 import { useData } from '../../context/DataContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { useAuth } from '../../context/AuthContext';
 import { Badge } from '../common/Badge';
+import { ConfirmDialog } from '../common/ConfirmDialog';
 import {
   formatSAR,
   formatDate,
@@ -51,7 +53,7 @@ import {
 } from 'recharts';
 
 export const ReportsView: React.FC = () => {
-  const { offices, tenants, contracts, payments, settings, effectiveDate } = useData();
+  const { offices, tenants, contracts, payments, settings, effectiveDate, deletePayment } = useData();
   const { language, t } = useLanguage();
   const { isAdmin } = useAuth();
 
@@ -74,6 +76,7 @@ export const ReportsView: React.FC = () => {
   const [selectedInstallmentForPayment, setSelectedInstallmentForPayment] = useState<PaymentInstallment | null>(null);
   const [selectedInstallmentForEdit, setSelectedInstallmentForEdit] = useState<PaymentInstallment | null>(null);
   const [selectedInstallmentForReceipt, setSelectedInstallmentForReceipt] = useState<PaymentInstallment | null>(null);
+  const [installmentToDelete, setInstallmentToDelete] = useState<PaymentInstallment | null>(null);
 
   // --- Dynamic Building Financial Summary KPIs ---
   const summary = useMemo(() => {
@@ -1136,6 +1139,17 @@ export const ReportsView: React.FC = () => {
                                   <Receipt className="h-3.5 w-3.5" />
                                 </button>
                               )}
+
+                              {/* Delete Installment (Admin) */}
+                              {isAdmin && (
+                                <button
+                                  onClick={() => setInstallmentToDelete(inst)}
+                                  className="p-1 rounded-lg hover:bg-red-100 dark:hover:bg-red-950/40 text-sand-400 hover:text-red-600 transition-colors"
+                                  title={language === 'ar' ? 'حذف الدفعة' : 'Delete Installment'}
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </button>
+                              )}
                             </div>
                           </td>
                         </tr>
@@ -1276,6 +1290,26 @@ export const ReportsView: React.FC = () => {
         isOpen={!!selectedInstallmentForReceipt}
         onClose={() => setSelectedInstallmentForReceipt(null)}
         installment={selectedInstallmentForReceipt}
+      />
+
+      {/* Delete Installment Confirm Dialog */}
+      <ConfirmDialog
+        isOpen={!!installmentToDelete}
+        onClose={() => setInstallmentToDelete(null)}
+        onConfirm={() => {
+          if (installmentToDelete) {
+            deletePayment(installmentToDelete.id);
+            setInstallmentToDelete(null);
+          }
+        }}
+        title={language === 'ar' ? 'تأكيد حذف الدفعة' : 'Confirm Delete Payment'}
+        message={
+          language === 'ar'
+            ? `هل أنت متأكد من حذف الدفعة (${installmentToDelete?.invoiceNumber || ''}) بمبلغ ${installmentToDelete?.totalAmount ? formatSAR(installmentToDelete.totalAmount, language) : ''}؟`
+            : `Are you sure you want to permanently delete payment installment (${installmentToDelete?.invoiceNumber || ''}) for ${installmentToDelete?.totalAmount ? formatSAR(installmentToDelete.totalAmount, language) : ''}?`
+        }
+        confirmText={language === 'ar' ? 'نعم، حذف نهائي' : 'Yes, Delete Permanently'}
+        variant="danger"
       />
     </div>
   );

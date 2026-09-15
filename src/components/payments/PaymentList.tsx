@@ -7,12 +7,14 @@ import {
   AlertCircle,
   Printer,
   Mail,
+  Trash2,
 } from 'lucide-react';
 import { useData } from '../../context/DataContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { useAuth } from '../../context/AuthContext';
 import { PaymentInstallment } from '../../types';
 import { Badge } from '../common/Badge';
+import { ConfirmDialog } from '../common/ConfirmDialog';
 import { RecordPaymentModal } from './RecordPaymentModal';
 import { ReceiptVoucherModal } from './ReceiptVoucherModal';
 import { EmailNoticeModal } from '../common/EmailNoticeModal';
@@ -26,13 +28,14 @@ interface PaymentListProps {
 }
 
 export const PaymentList: React.FC<PaymentListProps> = ({ onNavigate, selectedInstallmentId }) => {
-  const { payments, tenants, offices, contracts, settings, effectiveDate } = useData();
+  const { payments, tenants, offices, contracts, settings, effectiveDate, deletePayment } = useData();
   const { language, t } = useLanguage();
   const { isAdmin } = useAuth();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'PAID' | 'PENDING' | 'OVERDUE'>('ALL');
   const [tenantFilter, setTenantFilter] = useState<string>('ALL');
+  const [installmentToDelete, setInstallmentToDelete] = useState<PaymentInstallment | null>(null);
 
   const [recordingInstallment, setRecordingInstallment] = useState<PaymentInstallment | null>(() => {
     if (selectedInstallmentId) {
@@ -310,6 +313,15 @@ export const PaymentList: React.FC<PaymentListProps> = ({ onNavigate, selectedIn
                               <Printer className="h-4 w-4" />
                             </button>
                           )}
+                          {isAdmin && (
+                            <button
+                              onClick={() => setInstallmentToDelete(p)}
+                              className="p-1.5 rounded-lg text-sand-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors"
+                              title={language === 'ar' ? 'حذف الدفعة' : 'Delete Installment'}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -407,6 +419,15 @@ export const PaymentList: React.FC<PaymentListProps> = ({ onNavigate, selectedIn
                           <Printer className="h-4 w-4" />
                         </button>
                       )}
+                      {isAdmin && (
+                        <button
+                          onClick={() => setInstallmentToDelete(p)}
+                          className="p-2.5 rounded-xl bg-cream-100 dark:bg-najdi-800 text-sand-400 hover:text-red-600 border border-cream-200 dark:border-najdi-700 transition-colors"
+                          title={language === 'ar' ? 'حذف الدفعة' : 'Delete'}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>
@@ -442,6 +463,26 @@ export const PaymentList: React.FC<PaymentListProps> = ({ onNavigate, selectedIn
         defaultSubject={emailNoticeData.subject}
         defaultBody={emailNoticeData.body}
         title={language === 'ar' ? 'إرسال إشعار استحقاق دفعة إيجارية' : 'Send Rent Payment Reminder'}
+      />
+
+      {/* Delete Payment Confirm Dialog */}
+      <ConfirmDialog
+        isOpen={!!installmentToDelete}
+        onClose={() => setInstallmentToDelete(null)}
+        onConfirm={() => {
+          if (installmentToDelete) {
+            deletePayment(installmentToDelete.id);
+            setInstallmentToDelete(null);
+          }
+        }}
+        title={language === 'ar' ? 'تأكيد حذف الدفعة' : 'Confirm Delete Payment'}
+        message={
+          language === 'ar'
+            ? `هل أنت متأكد من حذف الدفعة (${installmentToDelete?.invoiceNumber || ''}) بمبلغ ${installmentToDelete?.totalAmount ? formatSAR(installmentToDelete.totalAmount, language) : ''}؟ سيتم حذفها نهائياً وسيتحدث السحاب آلياً.`
+            : `Are you sure you want to permanently delete payment installment (${installmentToDelete?.invoiceNumber || ''}) for ${installmentToDelete?.totalAmount ? formatSAR(installmentToDelete.totalAmount, language) : ''}?`
+        }
+        confirmText={language === 'ar' ? 'نعم، حذف نهائي' : 'Yes, Delete Permanently'}
+        variant="danger"
       />
     </div>
   );

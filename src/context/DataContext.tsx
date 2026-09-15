@@ -67,6 +67,7 @@ interface DataContextType {
     notes?: string;
   }) => void;
   updateInstallment: (installmentId: string, updates: Partial<PaymentInstallment>) => void;
+  deletePayment: (installmentId: string) => void;
 
   // Notifications
   unreadNotificationCount: number;
@@ -162,7 +163,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         let cachedPayments: PaymentInstallment[] = Array.isArray(cached.payments) ? cached.payments : [];
         const validContractMap = new Map<string, Contract>(cachedContracts.filter((c: Contract) => c.status !== 'CANCELLED').map((c: Contract) => [c.id, c]));
-        cachedPayments = cachedPayments.filter(p => validContractMap.has(p.contractId));
+        cachedPayments = cachedPayments.filter(p => {
+          const contract = validContractMap.get(p.contractId);
+          if (!contract) return false;
+          if (p.tenantId && p.tenantId !== contract.tenantId) return false;
+          if (p.officeId && p.officeId !== contract.officeId) return false;
+          return true;
+        });
 
         for (const [cId, contract] of validContractMap.entries()) {
           const hasPayments = cachedPayments.some(p => p.contractId === cId);
@@ -214,8 +221,15 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         let loadedPayments: PaymentInstallment[] = Array.isArray(cloudData.payments) ? cloudData.payments : [];
         const validContractMap = new Map<string, Contract>(loadedContracts.filter((c: Contract) => c.status !== 'CANCELLED').map((c: Contract) => [c.id, c]));
         
-        // Strip orphaned payments
-        loadedPayments = loadedPayments.filter(p => validContractMap.has(p.contractId));
+        // Strip orphaned payments and payments with mismatched tenant/office from old deleted contracts
+        loadedPayments = loadedPayments.filter(p => {
+          const contract = validContractMap.get(p.contractId);
+          if (!contract) return false;
+          // If payment was created under an older deleted contract with a different tenant/office, purge it
+          if (p.tenantId && p.tenantId !== contract.tenantId) return false;
+          if (p.officeId && p.officeId !== contract.officeId) return false;
+          return true;
+        });
 
         // Ensure every active contract has its payment schedule
         for (const [cId, contract] of validContractMap.entries()) {
@@ -334,8 +348,14 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       let loadedPayments: PaymentInstallment[] = Array.isArray(cloudData.payments) ? cloudData.payments : [];
       const validContractMap = new Map<string, Contract>(loadedContracts.filter((c: Contract) => c.status !== 'CANCELLED').map((c: Contract) => [c.id, c]));
       
-      // Permanently filter out orphaned payments from old deleted contracts in Supabase
-      loadedPayments = loadedPayments.filter(p => validContractMap.has(p.contractId));
+      // Permanently filter out orphaned payments and payments with mismatched tenant/office from old deleted contracts in Supabase
+      loadedPayments = loadedPayments.filter(p => {
+        const contract = validContractMap.get(p.contractId);
+        if (!contract) return false;
+        if (p.tenantId && p.tenantId !== contract.tenantId) return false;
+        if (p.officeId && p.officeId !== contract.officeId) return false;
+        return true;
+      });
 
       // Ensure every active contract has its payment schedule
       for (const [cId, contract] of validContractMap.entries()) {
@@ -776,6 +796,18 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     );
   };
 
+  const deletePayment = (installmentId: string) => {
+    const target = payments.find(p => p.id === installmentId);
+    setPayments(prev => prev.filter(p => p.id !== installmentId));
+    logActivity(
+      'PAYMENT_UPDATED',
+      `Deleted payment installment ${target?.invoiceNumber || installmentId}`,
+      `حذف الدفعة ${target?.invoiceNumber || installmentId}`,
+      'PAYMENT',
+      installmentId
+    );
+  };
+
   // ------------------- Notifications -------------------
   const unreadNotificationCount = useMemo(() => {
     return notifications.filter(n => !n.isRead).length;
@@ -864,6 +896,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         attachContractDoc,
         recordPayment,
         updateInstallment,
+        deletePayment,
         unreadNotificationCount,
         markNotificationRead,
         markAllNotificationsRead,
