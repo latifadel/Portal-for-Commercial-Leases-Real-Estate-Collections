@@ -104,8 +104,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [cloudStatus, setCloudStatus] = useState<'synced' | 'saving' | 'offline' | 'error'>('synced');
   const [lastSyncedAt, setLastSyncedAt] = useState<string>(() => new Date().toLocaleTimeString());
 
-  // Prevent saving during initial cloud fetch
+  // Prevent saving during initial cloud fetch & suppress self-echo from realtime
   const isInitialLoadDone = useRef<boolean>(false);
+  const isLocalMutation = useRef<boolean>(false);
 
   // Effective Current Date (supports simulation date override)
   const effectiveDate = useMemo(() => {
@@ -213,53 +214,52 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (!isMounted) return;
 
       if (cloudData) {
-        const loadedContracts: Contract[] = Array.isArray(cloudData.contracts) ? cloudData.contracts : [];
-        if (Array.isArray(cloudData.tenants)) setTenants(cloudData.tenants);
-        if (Array.isArray(cloudData.offices)) setOffices(cloudData.offices);
-        setContracts(loadedContracts);
+        // Only overwrite if we don't have pending local mutations in flight
+        if (!isLocalMutation.current) {
+          const loadedContracts: Contract[] = Array.isArray(cloudData.contracts) ? cloudData.contracts : [];
+          if (Array.isArray(cloudData.tenants)) setTenants(cloudData.tenants);
+          if (Array.isArray(cloudData.offices)) setOffices(cloudData.offices);
+          setContracts(loadedContracts);
 
-        let loadedPayments: PaymentInstallment[] = Array.isArray(cloudData.payments) ? cloudData.payments : [];
-        const validContractMap = new Map<string, Contract>(loadedContracts.filter((c: Contract) => c.status !== 'CANCELLED').map((c: Contract) => [c.id, c]));
-        
-        // Strip orphaned payments and payments with mismatched tenant/office from old deleted contracts
-        loadedPayments = loadedPayments.filter(p => {
-          const contract = validContractMap.get(p.contractId);
-          if (!contract) return false;
-          // If payment was created under an older deleted contract with a different tenant/office, purge it
-          if (p.tenantId && p.tenantId !== contract.tenantId) return false;
-          if (p.officeId && p.officeId !== contract.officeId) return false;
-          return true;
-        });
+          let loadedPayments: PaymentInstallment[] = Array.isArray(cloudData.payments) ? cloudData.payments : [];
+          const validContractMap = new Map<string, Contract>(loadedContracts.filter((c: Contract) => c.status !== 'CANCELLED').map((c: Contract) => [c.id, c]));
+          
+          loadedPayments = loadedPayments.filter(p => {
+            const contract = validContractMap.get(p.contractId);
+            if (!contract) return false;
+            if (p.tenantId && p.tenantId !== contract.tenantId) return false;
+            if (p.officeId && p.officeId !== contract.officeId) return false;
+            return true;
+          });
 
-        // Ensure every active contract has its payment schedule
-        for (const [cId, contract] of validContractMap.entries()) {
-          const hasPayments = loadedPayments.some(p => p.contractId === cId);
-          if (!hasPayments) {
-            const generated = generatePaymentSchedule({
-              contractId: contract.id,
-              tenantId: contract.tenantId,
-              officeId: contract.officeId,
-              startDate: contract.startDate,
-              endDate: contract.endDate,
-              durationMonths: contract.durationMonths,
-              baseRent: contract.baseRent,
-              vatRate: contract.vatRate || 0.15,
-              paymentFrequency: contract.paymentFrequency,
-            });
-            loadedPayments = [...loadedPayments, ...generated];
+          for (const [cId, contract] of validContractMap.entries()) {
+            const hasPayments = loadedPayments.some(p => p.contractId === cId);
+            if (!hasPayments) {
+              const generated = generatePaymentSchedule({
+                contractId: contract.id,
+                tenantId: contract.tenantId,
+                officeId: contract.officeId,
+                startDate: contract.startDate,
+                endDate: contract.endDate,
+                durationMonths: contract.durationMonths,
+                baseRent: contract.baseRent,
+                vatRate: contract.vatRate || 0.15,
+                paymentFrequency: contract.paymentFrequency,
+              });
+              loadedPayments = [...loadedPayments, ...generated];
+            }
           }
-        }
 
-        setPayments(loadedPayments);
-        if (cloudData.settings) setSettings(prev => ({ ...prev, ...cloudData.settings }));
-        if (Array.isArray(cloudData.activityLogs)) setActivityLogs(cloudData.activityLogs);
-        if (Array.isArray(cloudData.notifications)) setNotifications(cloudData.notifications);
+          setPayments(loadedPayments);
+          if (cloudData.settings) setSettings(prev => ({ ...prev, ...cloudData.settings }));
+          if (Array.isArray(cloudData.activityLogs)) setActivityLogs(cloudData.activityLogs);
+          if (Array.isArray(cloudData.notifications)) setNotifications(cloudData.notifications);
+        }
 
         const timeStr = new Date().toLocaleTimeString();
         setLastSyncedAt(timeStr);
         setCloudStatus('synced');
       } else {
-        // No cloud record yet for this user - create initial clean store in Supabase
         const initialPayload: SupabasePropertyData = {
           tenants: [],
           offices: [],
@@ -281,9 +281,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     fetchFromSupabase();
 
-    // Subscribe to realtime changes for this user's private data across all their devices
+    // Subscribe to realtime changes for this user's private data across other devices
     const unsubscribe = subscribeToRealtimePropertyData(currentUser.id, (incoming: SupabasePropertyData) => {
       if (!isMounted) return;
+      // If we just saved locally, don't let our own echo overwrite our state
+      if (isLocalMutation.current) {
+        return;
+      }
       if (Array.isArray(incoming.tenants)) setTenants(incoming.tenants);
       if (Array.isArray(incoming.offices)) setOffices(incoming.offices);
       if (Array.isArray(incoming.contracts)) setContracts(incoming.contracts);
@@ -305,9 +309,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, [currentUser]);
 
-  // 2. Auto-save to Supabase with debounce whenever state changes for currentUser
+  // 2. Auto-save to Supabase whenever state changes for currentUser
   useEffect(() => {
     if (!currentUser || !isInitialLoadDone.current) return;
+
+    isLocalMutation.current = true;
 
     const timer = setTimeout(async () => {
       setCloudStatus('saving');
@@ -330,7 +336,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } else {
         setCloudStatus('error');
       }
-    }, 600);
+
+      // Reset local mutation guard after echo window passes
+      setTimeout(() => {
+        isLocalMutation.current = false;
+      }, 1500);
+    }, 400);
 
     return () => clearTimeout(timer);
   }, [currentUser, tenants, offices, contracts, payments, settings, activityLogs, notifications]);
