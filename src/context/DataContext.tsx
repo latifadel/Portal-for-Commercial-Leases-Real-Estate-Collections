@@ -155,13 +155,34 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const saved = localStorage.getItem(getCacheKey(currentUser.id));
       if (saved) {
         const cached = JSON.parse(saved);
+        const cachedContracts: Contract[] = Array.isArray(cached.contracts) ? cached.contracts : [];
         if (Array.isArray(cached.tenants)) setTenants(cached.tenants);
         if (Array.isArray(cached.offices)) setOffices(cached.offices);
-        if (Array.isArray(cached.contracts)) setContracts(cached.contracts);
-        if (Array.isArray(cached.payments)) {
-          const validIds = new Set((cached.contracts || []).filter((c: any) => c.status !== 'CANCELLED').map((c: any) => c.id));
-          setPayments(cached.payments.filter((p: any) => validIds.has(p.contractId)));
+        setContracts(cachedContracts);
+
+        let cachedPayments: PaymentInstallment[] = Array.isArray(cached.payments) ? cached.payments : [];
+        const validContractMap = new Map<string, Contract>(cachedContracts.filter((c: Contract) => c.status !== 'CANCELLED').map((c: Contract) => [c.id, c]));
+        cachedPayments = cachedPayments.filter(p => validContractMap.has(p.contractId));
+
+        for (const [cId, contract] of validContractMap.entries()) {
+          const hasPayments = cachedPayments.some(p => p.contractId === cId);
+          if (!hasPayments) {
+            const generated = generatePaymentSchedule({
+              contractId: contract.id,
+              tenantId: contract.tenantId,
+              officeId: contract.officeId,
+              startDate: contract.startDate,
+              endDate: contract.endDate,
+              durationMonths: contract.durationMonths,
+              baseRent: contract.baseRent,
+              vatRate: contract.vatRate || 0.15,
+              paymentFrequency: contract.paymentFrequency,
+            });
+            cachedPayments = [...cachedPayments, ...generated];
+          }
         }
+
+        setPayments(cachedPayments);
         if (cached.settings) setSettings(prev => ({ ...prev, ...cached.settings }));
         if (Array.isArray(cached.activityLogs)) setActivityLogs(cached.activityLogs);
         if (Array.isArray(cached.notifications)) setNotifications(cached.notifications);
@@ -185,13 +206,37 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (!isMounted) return;
 
       if (cloudData) {
+        const loadedContracts: Contract[] = Array.isArray(cloudData.contracts) ? cloudData.contracts : [];
         if (Array.isArray(cloudData.tenants)) setTenants(cloudData.tenants);
         if (Array.isArray(cloudData.offices)) setOffices(cloudData.offices);
-        if (Array.isArray(cloudData.contracts)) setContracts(cloudData.contracts);
-        if (Array.isArray(cloudData.payments)) {
-          const validIds = new Set((cloudData.contracts || []).filter((c: any) => c.status !== 'CANCELLED').map((c: any) => c.id));
-          setPayments(cloudData.payments.filter((p: any) => validIds.has(p.contractId)));
+        setContracts(loadedContracts);
+
+        let loadedPayments: PaymentInstallment[] = Array.isArray(cloudData.payments) ? cloudData.payments : [];
+        const validContractMap = new Map<string, Contract>(loadedContracts.filter((c: Contract) => c.status !== 'CANCELLED').map((c: Contract) => [c.id, c]));
+        
+        // Strip orphaned payments
+        loadedPayments = loadedPayments.filter(p => validContractMap.has(p.contractId));
+
+        // Ensure every active contract has its payment schedule
+        for (const [cId, contract] of validContractMap.entries()) {
+          const hasPayments = loadedPayments.some(p => p.contractId === cId);
+          if (!hasPayments) {
+            const generated = generatePaymentSchedule({
+              contractId: contract.id,
+              tenantId: contract.tenantId,
+              officeId: contract.officeId,
+              startDate: contract.startDate,
+              endDate: contract.endDate,
+              durationMonths: contract.durationMonths,
+              baseRent: contract.baseRent,
+              vatRate: contract.vatRate || 0.15,
+              paymentFrequency: contract.paymentFrequency,
+            });
+            loadedPayments = [...loadedPayments, ...generated];
+          }
         }
+
+        setPayments(loadedPayments);
         if (cloudData.settings) setSettings(prev => ({ ...prev, ...cloudData.settings }));
         if (Array.isArray(cloudData.activityLogs)) setActivityLogs(cloudData.activityLogs);
         if (Array.isArray(cloudData.notifications)) setNotifications(cloudData.notifications);
@@ -281,32 +326,66 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setCloudStatus('saving');
     const cloudData = await loadPropertyDataFromSupabase(currentUser.id);
     if (cloudData) {
+      const loadedContracts: Contract[] = Array.isArray(cloudData.contracts) ? cloudData.contracts : [];
       if (Array.isArray(cloudData.tenants)) setTenants(cloudData.tenants);
       if (Array.isArray(cloudData.offices)) setOffices(cloudData.offices);
-      if (Array.isArray(cloudData.contracts)) setContracts(cloudData.contracts);
-      if (Array.isArray(cloudData.payments)) {
-        const validIds = new Set((cloudData.contracts || []).filter((c: any) => c.status !== 'CANCELLED').map((c: any) => c.id));
-        setPayments(cloudData.payments.filter((p: any) => validIds.has(p.contractId)));
+      setContracts(loadedContracts);
+
+      let loadedPayments: PaymentInstallment[] = Array.isArray(cloudData.payments) ? cloudData.payments : [];
+      const validContractMap = new Map<string, Contract>(loadedContracts.filter((c: Contract) => c.status !== 'CANCELLED').map((c: Contract) => [c.id, c]));
+      
+      // Permanently filter out orphaned payments from old deleted contracts in Supabase
+      loadedPayments = loadedPayments.filter(p => validContractMap.has(p.contractId));
+
+      // Ensure every active contract has its payment schedule
+      for (const [cId, contract] of validContractMap.entries()) {
+        const hasPayments = loadedPayments.some(p => p.contractId === cId);
+        if (!hasPayments) {
+          const generated = generatePaymentSchedule({
+            contractId: contract.id,
+            tenantId: contract.tenantId,
+            officeId: contract.officeId,
+            startDate: contract.startDate,
+            endDate: contract.endDate,
+            durationMonths: contract.durationMonths,
+            baseRent: contract.baseRent,
+            vatRate: contract.vatRate || 0.15,
+            paymentFrequency: contract.paymentFrequency,
+          });
+          loadedPayments = [...loadedPayments, ...generated];
+        }
       }
+
+      setPayments(loadedPayments);
       if (cloudData.settings) setSettings(prev => ({ ...prev, ...cloudData.settings }));
       setLastSyncedAt(new Date().toLocaleTimeString());
       setCloudStatus('synced');
+
+      // Persist the cleaned payments directly back to Supabase so it never returns old orphaned payments again
+      savePropertyDataToSupabase({
+        tenants: cloudData.tenants || [],
+        offices: cloudData.offices || [],
+        contracts: loadedContracts,
+        payments: loadedPayments,
+        settings: cloudData.settings || initialSettings,
+        activityLogs: cloudData.activityLogs || [],
+        notifications: cloudData.notifications || [],
+        updatedAt: new Date().toISOString(),
+        updatedBy: currentUser.name,
+      }, currentUser.id);
     } else {
       setCloudStatus('error');
     }
   };
 
-  // Dynamically update statuses based on effectiveDate and strip any orphaned payments
+  // Dynamically update statuses based on effectiveDate
   useEffect(() => {
-    const validContractIds = new Set(contracts.filter(c => c.status !== 'CANCELLED').map(c => c.id));
-    
-    setPayments(prevPayments => {
-      const filtered = prevPayments.filter(p => validContractIds.has(p.contractId));
-      return filtered.map(p => {
+    setPayments(prevPayments =>
+      prevPayments.map(p => {
         const calculatedStatus = determinePaymentStatus(p, effectiveDate);
         return calculatedStatus !== p.status ? { ...p, status: calculatedStatus } : p;
-      });
-    });
+      })
+    );
 
     setContracts(prevContracts =>
       prevContracts.map(ctr => {
@@ -314,7 +393,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return calculatedStatus !== ctr.status ? { ...ctr, status: calculatedStatus } : ctr;
       })
     );
-  }, [effectiveDate, contracts]);
+  }, [effectiveDate]);
 
   // Activity Log helper
   const logActivity = (
