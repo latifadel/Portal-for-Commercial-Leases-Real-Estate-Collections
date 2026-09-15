@@ -316,10 +316,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } else {
         setCloudStatus('error');
       }
-    }, 1200);
+    }, 600);
 
     return () => clearTimeout(timer);
-  }, [currentUser, tenants, offices, contracts, payments, settings]);
+  }, [currentUser, tenants, offices, contracts, payments, settings, activityLogs, notifications]);
 
   const refreshFromCloud = async () => {
     if (!currentUser) return;
