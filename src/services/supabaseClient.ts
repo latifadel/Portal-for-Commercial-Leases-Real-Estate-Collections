@@ -35,14 +35,13 @@ export interface SupabasePropertyData {
 export const getRecordKey = (userId?: string) => (userId ? `user_property_${userId}` : 'commercial_building_main');
 
 /**
- * Load property data from Supabase cloud database for a specific user
- * If user does not have private records yet, automatically load and seed from commercial_building_main
+ * Load property data from Supabase cloud database strictly for the specific user
  */
 export const loadPropertyDataFromSupabase = async (userId?: string): Promise<SupabasePropertyData | null> => {
+  if (!userId) return null;
   try {
     const recordKey = getRecordKey(userId);
     
-    // 1. Try to fetch user's specific record
     const { data, error } = await supabase
       .from('property_records')
       .select('payload, updated_at')
@@ -51,30 +50,7 @@ export const loadPropertyDataFromSupabase = async (userId?: string): Promise<Sup
 
     if (error) {
       console.warn('[Supabase] Fetch error:', error.message);
-    }
-
-    // If user already has existing populated data in their private record, return it
-    if (data && data.payload) {
-      const p = data.payload as SupabasePropertyData;
-      if ((Array.isArray(p.offices) && p.offices.length > 0) || (Array.isArray(p.tenants) && p.tenants.length > 0)) {
-        return p;
-      }
-    }
-
-    // 2. If private record is empty or new, load the master building data (Alabdullatif Tower)
-    const { data: mainData } = await supabase
-      .from('property_records')
-      .select('payload, updated_at')
-      .eq('record_key', 'commercial_building_main')
-      .maybeSingle();
-
-    if (mainData && mainData.payload) {
-      const masterPayload = mainData.payload as SupabasePropertyData;
-      // Seed this user's private store so they start with all the offices, showrooms, and contracts
-      if (userId) {
-        await savePropertyDataToSupabase(masterPayload, userId);
-      }
-      return masterPayload;
+      return null;
     }
 
     if (data && data.payload) {
