@@ -158,7 +158,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (Array.isArray(cached.tenants)) setTenants(cached.tenants);
         if (Array.isArray(cached.offices)) setOffices(cached.offices);
         if (Array.isArray(cached.contracts)) setContracts(cached.contracts);
-        if (Array.isArray(cached.payments)) setPayments(cached.payments);
+        if (Array.isArray(cached.payments)) {
+          const validIds = new Set((cached.contracts || []).filter((c: any) => c.status !== 'CANCELLED').map((c: any) => c.id));
+          setPayments(cached.payments.filter((p: any) => validIds.has(p.contractId)));
+        }
         if (cached.settings) setSettings(prev => ({ ...prev, ...cached.settings }));
         if (Array.isArray(cached.activityLogs)) setActivityLogs(cached.activityLogs);
         if (Array.isArray(cached.notifications)) setNotifications(cached.notifications);
@@ -185,7 +188,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (Array.isArray(cloudData.tenants)) setTenants(cloudData.tenants);
         if (Array.isArray(cloudData.offices)) setOffices(cloudData.offices);
         if (Array.isArray(cloudData.contracts)) setContracts(cloudData.contracts);
-        if (Array.isArray(cloudData.payments)) setPayments(cloudData.payments);
+        if (Array.isArray(cloudData.payments)) {
+          const validIds = new Set((cloudData.contracts || []).filter((c: any) => c.status !== 'CANCELLED').map((c: any) => c.id));
+          setPayments(cloudData.payments.filter((p: any) => validIds.has(p.contractId)));
+        }
         if (cloudData.settings) setSettings(prev => ({ ...prev, ...cloudData.settings }));
         if (Array.isArray(cloudData.activityLogs)) setActivityLogs(cloudData.activityLogs);
         if (Array.isArray(cloudData.notifications)) setNotifications(cloudData.notifications);
@@ -222,7 +228,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (Array.isArray(incoming.tenants)) setTenants(incoming.tenants);
       if (Array.isArray(incoming.offices)) setOffices(incoming.offices);
       if (Array.isArray(incoming.contracts)) setContracts(incoming.contracts);
-      if (Array.isArray(incoming.payments)) setPayments(incoming.payments);
+      if (Array.isArray(incoming.payments)) {
+        const validIds = new Set((incoming.contracts || []).filter((c: any) => c.status !== 'CANCELLED').map((c: any) => c.id));
+        setPayments(incoming.payments.filter((p: any) => validIds.has(p.contractId)));
+      }
       if (incoming.settings) setSettings(prev => ({ ...prev, ...incoming.settings }));
       if (Array.isArray(incoming.activityLogs)) setActivityLogs(incoming.activityLogs);
       if (Array.isArray(incoming.notifications)) setNotifications(incoming.notifications);
@@ -275,7 +284,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (Array.isArray(cloudData.tenants)) setTenants(cloudData.tenants);
       if (Array.isArray(cloudData.offices)) setOffices(cloudData.offices);
       if (Array.isArray(cloudData.contracts)) setContracts(cloudData.contracts);
-      if (Array.isArray(cloudData.payments)) setPayments(cloudData.payments);
+      if (Array.isArray(cloudData.payments)) {
+        const validIds = new Set((cloudData.contracts || []).filter((c: any) => c.status !== 'CANCELLED').map((c: any) => c.id));
+        setPayments(cloudData.payments.filter((p: any) => validIds.has(p.contractId)));
+      }
       if (cloudData.settings) setSettings(prev => ({ ...prev, ...cloudData.settings }));
       setLastSyncedAt(new Date().toLocaleTimeString());
       setCloudStatus('synced');
@@ -284,22 +296,25 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Dynamically update statuses based on effectiveDate
+  // Dynamically update statuses based on effectiveDate and strip any orphaned payments
   useEffect(() => {
+    const validContractIds = new Set(contracts.filter(c => c.status !== 'CANCELLED').map(c => c.id));
+    
+    setPayments(prevPayments => {
+      const filtered = prevPayments.filter(p => validContractIds.has(p.contractId));
+      return filtered.map(p => {
+        const calculatedStatus = determinePaymentStatus(p, effectiveDate);
+        return calculatedStatus !== p.status ? { ...p, status: calculatedStatus } : p;
+      });
+    });
+
     setContracts(prevContracts =>
       prevContracts.map(ctr => {
         const calculatedStatus = determineContractStatus(ctr, effectiveDate);
         return calculatedStatus !== ctr.status ? { ...ctr, status: calculatedStatus } : ctr;
       })
     );
-
-    setPayments(prevPayments =>
-      prevPayments.map(p => {
-        const calculatedStatus = determinePaymentStatus(p, effectiveDate);
-        return calculatedStatus !== p.status ? { ...p, status: calculatedStatus } : p;
-      })
-    );
-  }, [effectiveDate]);
+  }, [effectiveDate, contracts]);
 
   // Activity Log helper
   const logActivity = (
@@ -725,10 +740,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const parsed = JSON.parse(jsonData);
       if (parsed.tenants && parsed.offices && parsed.contracts && parsed.payments) {
+        const validContractIds = new Set((parsed.contracts || []).filter((c: any) => c.status !== 'CANCELLED').map((c: any) => c.id));
         setTenants(parsed.tenants);
         setOffices(parsed.offices);
         setContracts(parsed.contracts);
-        setPayments(parsed.payments);
+        setPayments(parsed.payments.filter((p: any) => validContractIds.has(p.contractId)));
         if (parsed.notifications) setNotifications(parsed.notifications);
         if (parsed.activityLogs) setActivityLogs(parsed.activityLogs);
         if (parsed.settings) setSettings(parsed.settings);

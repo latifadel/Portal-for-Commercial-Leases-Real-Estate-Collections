@@ -134,7 +134,7 @@ export const PaymentList: React.FC<PaymentListProps> = ({ onNavigate, selectedIn
             </div>
             <span>{t('payments')}</span>
             <span className="text-xs font-sans font-semibold px-2.5 py-0.5 rounded-full bg-sand-200/70 dark:bg-najdi-800 text-najdi-800 dark:text-cream-200">
-              {payments.length} {language === 'ar' ? 'دفعات' : 'Installments'}
+              {validPayments.length} {language === 'ar' ? 'دفعات' : 'Installments'}
             </span>
           </h2>
           <p className="text-xs text-sand-500 dark:text-sand-400 mt-1">

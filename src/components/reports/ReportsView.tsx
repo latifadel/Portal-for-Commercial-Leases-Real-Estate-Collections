@@ -741,7 +741,7 @@ export const ReportsView: React.FC = () => {
             <FileSpreadsheet className="h-4 w-4" />
             <span>{language === 'ar' ? 'بيان عقود وتحصيلات المستأجرين' : 'Tenant Leases Statement'}</span>
             <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-sand-200 dark:bg-najdi-950 text-najdi-900 font-bold">
-              {contracts.length}
+              {tenantStatementRows.length}
             </span>
           </button>
 
@@ -756,7 +756,7 @@ export const ReportsView: React.FC = () => {
             <Calendar className="h-4 w-4" />
             <span>{language === 'ar' ? 'جدول استحقاق الدفعات والتحصيلات' : 'Payment Schedule & Collections'}</span>
             <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-sand-200 dark:bg-najdi-950 text-najdi-900 font-bold">
-              {payments.length}
+              {scheduleRows.length}
             </span>
           </button>
 

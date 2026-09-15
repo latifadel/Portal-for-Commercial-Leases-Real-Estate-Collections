@@ -37,7 +37,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const { payments, contracts, settings } = useData();
 
   // Compute live badges
-  const overdueCount = payments.filter(p => p.status === 'OVERDUE').length;
+  const validContractIds = new Set(contracts.filter(c => c.status !== 'CANCELLED').map(c => c.id));
+  const overdueCount = payments.filter(p => validContractIds.has(p.contractId) && p.status === 'OVERDUE').length;
   const expiringCount = contracts.filter(c => c.status === 'EXPIRING_SOON').length;
 
   const navItems = [
