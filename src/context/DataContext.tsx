@@ -416,8 +416,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       customInstallments?: PaymentInstallment[];
     }
   ): string => {
-    const nextNum = contracts.length + 1;
-    const id = `CTR-2026-${String(nextNum).padStart(3, '0')}`;
+    let nextNum = contracts.length + 1;
+    let id = `CTR-2026-${String(nextNum).padStart(3, '0')}`;
+    while (contracts.some(c => c.id === id)) {
+      nextNum++;
+      id = `CTR-2026-${String(nextNum).padStart(3, '0')}`;
+    }
     const vatAmount = calculateVAT(contractData.baseRent, contractData.vatRate);
     const totalRent = calculateTotalWithVAT(contractData.baseRent, contractData.vatRate);
 
@@ -458,8 +462,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
     }
 
-    setContracts(prev => [newContract, ...prev]);
-    setPayments(prev => [...prev, ...generatedInstallments]);
+    setContracts(prev => [newContract, ...prev.filter(c => c.id !== id)]);
+    setPayments(prev => [...prev.filter(p => p.contractId !== id), ...generatedInstallments]);
 
     // Mark office as OCCUPIED
     const calculatedAnnualRent =
