@@ -104,9 +104,16 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [cloudStatus, setCloudStatus] = useState<'synced' | 'saving' | 'offline' | 'error'>('synced');
   const [lastSyncedAt, setLastSyncedAt] = useState<string>(() => new Date().toLocaleTimeString());
 
-  // Prevent saving during initial cloud fetch & suppress self-echo from realtime
+  const currentUserId = currentUser?.id;
+  const currentUserName = currentUser?.name;
+
+  // Track the user ID whose data is loaded in memory
+  const loadedUserIdRef = useRef<string | null>(null);
+  // Prevent auto-save during initial cloud fetch
   const isInitialLoadDone = useRef<boolean>(false);
-  const isLocalMutation = useRef<boolean>(false);
+  // Track last local mutation timestamp to suppress echo overwrites from Realtime
+  const lastLocalMutationTime = useRef<number>(0);
+  const lastSavedTimestamp = useRef<number>(0);
 
   // Effective Current Date (supports simulation date override)
   const effectiveDate = useMemo(() => {
@@ -115,9 +122,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       : new Date().toISOString().split('T')[0];
   }, [settings.useSimulatedDate, settings.simulatedDate]);
 
-  // Sync to local cache as offline fallback per user
+  // Sync to local storage immediately whenever state changes
   useEffect(() => {
-    if (!currentUser) return;
+    if (!currentUserId || !isInitialLoadDone.current) return;
     try {
       const payload: SupabasePropertyData = {
         tenants,
@@ -128,16 +135,17 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         activityLogs,
         notifications,
         updatedAt: new Date().toISOString(),
+        updatedBy: currentUserName,
       };
-      localStorage.setItem(getCacheKey(currentUser.id), JSON.stringify(payload));
+      localStorage.setItem(getCacheKey(currentUserId), JSON.stringify(payload));
     } catch (e) {
       // ignore storage quota errors
     }
-  }, [currentUser, tenants, offices, contracts, payments, settings, activityLogs, notifications]);
+  }, [currentUserId, currentUserName, tenants, offices, contracts, payments, settings, activityLogs, notifications]);
 
-  // 1. Initial Cloud Data Fetch & Realtime Subscription per user
+  // 1. Initial Cloud Data Fetch & Realtime Subscription strictly on user ID change
   useEffect(() => {
-    if (!currentUser) {
+    if (!currentUserId) {
       setTenants([]);
       setOffices([]);
       setContracts([]);
@@ -145,25 +153,38 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setNotifications([]);
       setActivityLogs([]);
       setSettings(initialSettings);
+      loadedUserIdRef.current = null;
       isInitialLoadDone.current = false;
       return;
     }
 
+    // If we have already initialized this user session, do not re-run or wipe state
+    if (loadedUserIdRef.current === currentUserId && isInitialLoadDone.current) {
+      return;
+    }
+
+    loadedUserIdRef.current = currentUserId;
     isInitialLoadDone.current = false;
     let isMounted = true;
 
-    // Load from user-specific local cache first for instant render
+    // A. Instant hydration from local storage cache
+    let localUpdatedAt = 0;
     try {
-      const saved = localStorage.getItem(getCacheKey(currentUser.id));
+      const saved = localStorage.getItem(getCacheKey(currentUserId));
       if (saved) {
         const cached = JSON.parse(saved);
+        if (cached.updatedAt) {
+          localUpdatedAt = new Date(cached.updatedAt).getTime() || 0;
+        }
         const cachedContracts: Contract[] = Array.isArray(cached.contracts) ? cached.contracts : [];
         if (Array.isArray(cached.tenants)) setTenants(cached.tenants);
         if (Array.isArray(cached.offices)) setOffices(cached.offices);
         setContracts(cachedContracts);
 
         let cachedPayments: PaymentInstallment[] = Array.isArray(cached.payments) ? cached.payments : [];
-        const validContractMap = new Map<string, Contract>(cachedContracts.filter((c: Contract) => c.status !== 'CANCELLED').map((c: Contract) => [c.id, c]));
+        const validContractMap = new Map<string, Contract>(
+          cachedContracts.filter((c: Contract) => c.status !== 'CANCELLED').map((c: Contract) => [c.id, c])
+        );
         cachedPayments = cachedPayments.filter(p => {
           const contract = validContractMap.get(p.contractId);
           if (!contract) return false;
@@ -195,7 +216,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (Array.isArray(cached.activityLogs)) setActivityLogs(cached.activityLogs);
         if (Array.isArray(cached.notifications)) setNotifications(cached.notifications);
       } else {
-        // Fresh user: start with empty data
         setTenants([]);
         setOffices([]);
         setContracts([]);
@@ -208,22 +228,30 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // ignore
     }
 
+    // B. Fetch from Supabase
     const fetchFromSupabase = async () => {
       setCloudStatus('saving');
-      const cloudData = await loadPropertyDataFromSupabase(currentUser.id);
+      const cloudData = await loadPropertyDataFromSupabase(currentUserId);
       if (!isMounted) return;
 
       if (cloudData) {
-        // Only overwrite if we don't have pending local mutations in flight
-        if (!isLocalMutation.current) {
+        const cloudUpdatedAt = cloudData.updatedAt ? new Date(cloudData.updatedAt).getTime() : 0;
+        
+        // If cloud data is newer than local cache AND no local mutations occurred in the last 5 seconds, apply cloud data
+        const hasRecentLocalMutation = Date.now() - lastLocalMutationTime.current < 5000;
+        const shouldApplyCloud = (cloudUpdatedAt >= localUpdatedAt || localUpdatedAt === 0) && !hasRecentLocalMutation;
+
+        if (shouldApplyCloud) {
           const loadedContracts: Contract[] = Array.isArray(cloudData.contracts) ? cloudData.contracts : [];
           if (Array.isArray(cloudData.tenants)) setTenants(cloudData.tenants);
           if (Array.isArray(cloudData.offices)) setOffices(cloudData.offices);
           setContracts(loadedContracts);
 
           let loadedPayments: PaymentInstallment[] = Array.isArray(cloudData.payments) ? cloudData.payments : [];
-          const validContractMap = new Map<string, Contract>(loadedContracts.filter((c: Contract) => c.status !== 'CANCELLED').map((c: Contract) => [c.id, c]));
-          
+          const validContractMap = new Map<string, Contract>(
+            loadedContracts.filter((c: Contract) => c.status !== 'CANCELLED').map((c: Contract) => [c.id, c])
+          );
+
           loadedPayments = loadedPayments.filter(p => {
             const contract = validContractMap.get(p.contractId);
             if (!contract) return false;
@@ -254,12 +282,24 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (cloudData.settings) setSettings(prev => ({ ...prev, ...cloudData.settings }));
           if (Array.isArray(cloudData.activityLogs)) setActivityLogs(cloudData.activityLogs);
           if (Array.isArray(cloudData.notifications)) setNotifications(cloudData.notifications);
+        } else if (localUpdatedAt > cloudUpdatedAt) {
+          // Local cache has newer data than cloud; push local cache to cloud so cloud gets up to date
+          const localSaved = localStorage.getItem(getCacheKey(currentUserId));
+          if (localSaved) {
+            try {
+              const localPayload = JSON.parse(localSaved);
+              savePropertyDataToSupabase(localPayload, currentUserId);
+            } catch (e) {
+              // ignore
+            }
+          }
         }
 
         const timeStr = new Date().toLocaleTimeString();
         setLastSyncedAt(timeStr);
         setCloudStatus('synced');
       } else {
+        // First time cloud initialization for this user
         const initialPayload: SupabasePropertyData = {
           tenants: [],
           offices: [],
@@ -269,10 +309,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           activityLogs: [],
           notifications: [],
           updatedAt: new Date().toISOString(),
-          updatedBy: currentUser.name,
+          updatedBy: currentUserName,
         };
 
-        await savePropertyDataToSupabase(initialPayload, currentUser.id);
+        await savePropertyDataToSupabase(initialPayload, currentUserId);
         setCloudStatus('synced');
       }
 
@@ -281,13 +321,18 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     fetchFromSupabase();
 
-    // Subscribe to realtime changes for this user's private data across other devices
-    const unsubscribe = subscribeToRealtimePropertyData(currentUser.id, (incoming: SupabasePropertyData) => {
+    // C. Realtime Postgres Subscription with echo suppression
+    const unsubscribe = subscribeToRealtimePropertyData(currentUserId, (incoming: SupabasePropertyData) => {
       if (!isMounted) return;
-      // If we just saved locally, don't let our own echo overwrite our state
-      if (isLocalMutation.current) {
+      // If user recently made local changes within 5s, suppress realtime to avoid overwriting current edits
+      if (Date.now() - lastLocalMutationTime.current < 5000) {
         return;
       }
+      const incomingTime = incoming.updatedAt ? new Date(incoming.updatedAt).getTime() : 0;
+      if (incomingTime <= lastSavedTimestamp.current) {
+        return;
+      }
+
       if (Array.isArray(incoming.tenants)) setTenants(incoming.tenants);
       if (Array.isArray(incoming.offices)) setOffices(incoming.offices);
       if (Array.isArray(incoming.contracts)) setContracts(incoming.contracts);
@@ -307,16 +352,17 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       isMounted = false;
       unsubscribe();
     };
-  }, [currentUser]);
+  }, [currentUserId]);
 
-  // 2. Auto-save to Supabase whenever state changes for currentUser
+  // 2. Auto-save to Supabase whenever state changes (debounced 500ms)
   useEffect(() => {
-    if (!currentUser || !isInitialLoadDone.current) return;
+    if (!currentUserId || !isInitialLoadDone.current) return;
 
-    isLocalMutation.current = true;
+    lastLocalMutationTime.current = Date.now();
 
     const timer = setTimeout(async () => {
       setCloudStatus('saving');
+      const nowIso = new Date().toISOString();
       const payload: SupabasePropertyData = {
         tenants,
         offices,
@@ -325,26 +371,22 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         settings,
         activityLogs,
         notifications,
-        updatedAt: new Date().toISOString(),
-        updatedBy: currentUser.name,
+        updatedAt: nowIso,
+        updatedBy: currentUserName,
       };
 
-      const res = await savePropertyDataToSupabase(payload, currentUser.id);
+      lastSavedTimestamp.current = new Date(nowIso).getTime();
+      const res = await savePropertyDataToSupabase(payload, currentUserId);
       if (res.success) {
         setLastSyncedAt(new Date().toLocaleTimeString());
         setCloudStatus('synced');
       } else {
         setCloudStatus('error');
       }
-
-      // Reset local mutation guard after echo window passes
-      setTimeout(() => {
-        isLocalMutation.current = false;
-      }, 1500);
-    }, 400);
+    }, 500);
 
     return () => clearTimeout(timer);
-  }, [currentUser, tenants, offices, contracts, payments, settings, activityLogs, notifications]);
+  }, [currentUserId, currentUserName, tenants, offices, contracts, payments, settings, activityLogs, notifications]);
 
   const refreshFromCloud = async () => {
     if (!currentUser) return;
