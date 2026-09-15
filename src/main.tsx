@@ -4,7 +4,7 @@ import App from './App';
 import './index.css';
 
 // Register PWA service worker
-if ('serviceWorker' in navigator && process.env.NODE_ENV === 'production') {
+if ('serviceWorker' in navigator && ((import.meta as any).env?.PROD || (import.meta as any).env?.MODE === 'production')) {
   window.addEventListener('load', () => {
     navigator.serviceWorker
       .register('/sw.js')

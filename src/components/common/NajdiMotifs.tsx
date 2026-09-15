@@ -12,40 +12,20 @@ export const AlabdullatifLogo: React.FC<{
   const isCream = variant === 'cream';
 
   const iconSizes = { sm: 'h-8 w-8', md: 'h-10 w-10', lg: 'h-14 w-14' };
-  const titleSizes = { sm: 'text-sm', md: 'text-base', lg: 'text-2xl' };
+  const titleSizes = { sm: 'text-sm', md: 'text-base', lg: 'text-xl' };
   const subSizes = { sm: 'text-[9px]', md: 'text-[10px]', lg: 'text-xs' };
 
   return (
     <div className="flex items-center gap-3 select-none">
-      {/* Stylized Najdi Tower Crest */}
+      {/* Official Circular Logo Emblem */}
       <div
-        className={`relative ${iconSizes[size]} shrink-0 rounded-xl flex items-center justify-center shadow-md transition-transform ${
-          isDark
-            ? 'bg-najdi-800 border border-najdi-700 text-bronze-400'
-            : isCream
-            ? 'bg-cream-200 border border-cream-300 text-brand-600'
-            : 'bg-gradient-to-br from-najdi-800 via-najdi-900 to-najdi-950 border border-bronze-500/30 text-bronze-400 shadow-najdi-950/40'
-        }`}
+        className={`relative ${iconSizes[size]} shrink-0 rounded-full overflow-hidden shadow-md border border-sand-400/40 bg-sand-900/20`}
       >
-        <svg viewBox="0 0 40 40" className="w-4/5 h-4/5 fill-current" xmlns="http://www.w3.org/2000/svg">
-          {/* Triangular Najdi Sharafat (Crenellations) */}
-          <polygon points="20,4 25,12 15,12" className="text-bronze-400 fill-current" />
-          <polygon points="12,9 16,15 8,15" className="text-brand-500 fill-current opacity-80" />
-          <polygon points="28,9 32,15 24,15" className="text-brand-500 fill-current opacity-80" />
-
-          {/* Central Tower Body with traditional Najdi triangular windows */}
-          <path d="M13,16 L27,16 L29,36 L11,36 Z" className="text-bronze-300 fill-current" opacity="0.9" />
-          {/* Windows row 1 */}
-          <polygon points="20,18 22,22 18,22" className="text-najdi-950 fill-current" />
-          {/* Windows row 2 */}
-          <polygon points="16,24 18,28 14,28" className="text-najdi-950 fill-current" />
-          <polygon points="24,24 26,28 22,28" className="text-najdi-950 fill-current" />
-          {/* Windows row 3 */}
-          <polygon points="20,30 22,34 18,34" className="text-najdi-950 fill-current" />
-
-          {/* Base pediment */}
-          <rect x="8" y="35" width="24" height="2" rx="1" className="text-bronze-400 fill-current" />
-        </svg>
+        <img
+          src="/logo.png"
+          alt="مركز العبداللطيف"
+          className="w-full h-full object-cover rounded-full"
+        />
       </div>
 
       {/* Wordmark Typography */}
@@ -57,15 +37,15 @@ export const AlabdullatifLogo: React.FC<{
             : 'text-cream-50'
           }`}
         >
-          <span>برج العبداللطيف</span>
+          <span>مركز العبداللطيف</span>
         </div>
         {showSubtitle && (
           <div
             className={`font-sans tracking-widest uppercase font-semibold ${subSizes[size]} ${
-              isDark ? 'text-brand-600' : 'text-bronze-400'
+              isDark ? 'text-brand-600' : 'text-sand-300'
             }`}
           >
-            Alabdullatif Tower
+            Alabdullatif Center
           </div>
         )}
       </div>

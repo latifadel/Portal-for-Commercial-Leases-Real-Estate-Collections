@@ -1,4 +1,4 @@
-﻿import {
+import {
   Tenant,
   Office,
   Contract,
@@ -25,17 +25,17 @@ export const initialUsers: User[] = [
   },
 ];
 
-// Blank Settings (User sets their commercial building details)
+// Default Settings for Alabdullatif Center
 export const initialSettings: SystemSettings = {
-  buildingName: '',
-  buildingNameAr: '',
-  buildingAddress: '',
-  buildingAddressAr: '',
+  buildingName: 'Alabdullatif Center',
+  buildingNameAr: 'مركز العبداللطيف',
+  buildingAddress: 'Riyadh, Saudi Arabia',
+  buildingAddressAr: 'الرياض، المملكة العربية السعودية',
   crNumber: '',
   vatNumber: '',
   currency: 'SAR',
   defaultVatRate: 0.15,
-  language: 'en',
+  language: 'ar',
   simulatedDate: new Date().toISOString().split('T')[0],
   useSimulatedDate: false,
 };

@@ -78,8 +78,8 @@ export const Header: React.FC<HeaderProps> = ({ onOpenSearch, onNavigate, onOpen
 
   return (
     <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b border-cream-300 dark:border-najdi-800 bg-cream-50/90 dark:bg-najdi-950/90 backdrop-blur-md px-3 sm:px-6 gap-2 sm:gap-4 transition-colors">
-      {/* Left: Mobile Menu Trigger + Search */}
-      <div className="flex items-center gap-2 sm:gap-4 flex-1 max-w-lg">
+      {/* Left: Mobile Menu Trigger + Logo + Search */}
+      <div className="flex items-center gap-2 sm:gap-4 flex-1 max-w-xl">
         <button
           onClick={onOpenMobileMenu}
           className="lg:hidden p-2 rounded-xl text-najdi-700 dark:text-cream-200 hover:bg-cream-200 dark:hover:bg-najdi-800 transition-colors shrink-0"
@@ -87,6 +87,27 @@ export const Header: React.FC<HeaderProps> = ({ onOpenSearch, onNavigate, onOpen
         >
           <Menu className="h-5 w-5" />
         </button>
+
+        {/* Header App Logo & Name */}
+        <div 
+          onClick={() => onNavigate('dashboard')}
+          className="flex items-center gap-2.5 shrink-0 cursor-pointer select-none group"
+          title="مركز العبداللطيف"
+        >
+          <img
+            src="/logo.png"
+            alt="مركز العبداللطيف"
+            className="h-9 w-9 rounded-full object-cover border border-sand-400/50 shadow-sm shrink-0 group-hover:scale-105 transition-transform"
+          />
+          <div className="hidden sm:flex flex-col leading-tight">
+            <span className="font-serif font-bold text-xs sm:text-sm text-najdi-900 dark:text-cream-50 group-hover:text-brand-600 dark:group-hover:text-sand-300 transition-colors">
+              مركز العبداللطيف
+            </span>
+            <span className="text-[9px] text-sand-500 font-sans tracking-wide uppercase">
+              Alabdullatif Center
+            </span>
+          </div>
+        </div>
 
         {/* Search Bar Trigger - Warm Sand / Cream */}
         <button

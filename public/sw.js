@@ -1,5 +1,5 @@
-// Service Worker for Alabdullatif Tower PWA
-const CACHE_NAME = 'alabdullatif-pwa-v1';
+// Service Worker for Alabdullatif Center (مركز العبداللطيف) PWA
+const CACHE_NAME = 'alabdullatif-center-pwa-v2';
 
 const STATIC_ASSETS = [
   '/',
@@ -7,8 +7,11 @@ const STATIC_ASSETS = [
   '/manifest.json',
   '/favicon.png',
   '/apple-touch-icon.png',
+  '/apple-touch-icon-180x180.png',
   '/pwa-192x192.png',
-  '/pwa-512x512.png'
+  '/pwa-512x512.png',
+  '/logo.png',
+  '/logo-512.png'
 ];
 
 self.addEventListener('install', (event) => {

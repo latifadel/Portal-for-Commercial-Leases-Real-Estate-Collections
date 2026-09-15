@@ -1,7 +1,7 @@
 {
-  "name": "Alabdullatif Tower",
-  "short_name": "Alabdullatif",
-  "description": "Alabdullatif Tower Commercial Property Management – Riyadh, KSA",
+  "name": "مركز العبداللطيف",
+  "short_name": "مركز العبداللطيف",
+  "description": "نظام إدارة وتأجير مركز العبداللطيف التجاري – الرياض",
   "start_url": "/",
   "id": "/",
   "display": "standalone",
@@ -9,7 +9,7 @@
   "orientation": "portrait-primary",
   "background_color": "#F7F1E7",
   "theme_color": "#2A1A10",
-  "dir": "auto",
+  "dir": "rtl",
   "lang": "ar",
   "icons": [
     {
