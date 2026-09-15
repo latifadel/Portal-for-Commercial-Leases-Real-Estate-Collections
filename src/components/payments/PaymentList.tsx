@@ -138,7 +138,7 @@ export const PaymentList: React.FC<PaymentListProps> = ({ onNavigate, selectedIn
             </span>
           </h2>
           <p className="text-xs text-sand-500 dark:text-sand-400 mt-1">
-            {language === 'ar' ? 'متابعة الدفعات المحصلة، المتبقية، والمتأخرة لبرج العبداللطيف' : 'Track received payments, outstanding balances, and overdue rent for Alabdullatif Tower'}
+            {language === 'ar' ? 'متابعة الدفعات المحصلة، المتبقية، والمتأخرة في مركز العبداللطيف' : 'Track received payments, outstanding balances, and overdue rent for Alabdullatif Center'}
           </p>
         </div>
       </div>
@@ -235,9 +235,10 @@ export const PaymentList: React.FC<PaymentListProps> = ({ onNavigate, selectedIn
         </div>
       </div>
 
-      {/* Payments Table */}
+      {/* Payments List — Card view on mobile, Table on desktop */}
       <div className="overflow-hidden rounded-2xl border border-cream-300 dark:border-najdi-800 bg-white dark:bg-najdi-900 shadow-sm">
-        <div className="overflow-x-auto">
+        {/* Desktop Table */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-xs text-start">
             <thead className="bg-cream-100/90 dark:bg-najdi-850 text-sand-600 dark:text-sand-400 uppercase tracking-wider font-semibold border-b border-cream-300 dark:border-najdi-800">
               <tr>
@@ -271,92 +272,41 @@ export const PaymentList: React.FC<PaymentListProps> = ({ onNavigate, selectedIn
                   const isPaid = p.remainingAmount === 0;
 
                   return (
-                    <tr
-                      key={p.id}
-                      className="hover:bg-cream-50/70 dark:hover:bg-najdi-850/40 transition-colors group"
-                    >
+                    <tr key={p.id} className="hover:bg-cream-50/70 dark:hover:bg-najdi-850/40 transition-colors group">
                       <td className="p-4 font-mono font-bold text-najdi-900 dark:text-cream-100">
                         {p.invoiceNumber}
                         <span className="block text-[11px] text-sand-400 font-sans">{p.periodLabel}</span>
                       </td>
-
-                      <td className="p-4 font-bold text-najdi-900 dark:text-cream-50">
-                        {tenant?.name || 'N/A'}
-                      </td>
-
+                      <td className="p-4 font-bold text-najdi-900 dark:text-cream-50">{tenant?.name || 'N/A'}</td>
+                      <td className="p-4"><span className="font-semibold text-sand-700 dark:text-sand-300">{office?.officeNumber || 'Unit'}</span></td>
                       <td className="p-4">
-                        <span className="font-semibold text-sand-700 dark:text-sand-300">
-                          {office?.officeNumber || 'Unit'}
-                        </span>
-                      </td>
-
-                      <td className="p-4">
-                        <div className="font-medium text-najdi-800 dark:text-cream-200">
-                          {formatDate(p.dueDate, 'dd/MM/yyyy')}
-                        </div>
+                        <div className="font-medium text-najdi-800 dark:text-cream-200">{formatDate(p.dueDate, 'dd/MM/yyyy')}</div>
                         {isOverdue && (
-                          <span className="text-[11px] text-red-600 dark:text-red-400 font-bold block">
-                            {daysOverdue} {language === 'ar' ? 'يوم تأخير' : 'days overdue'}
-                          </span>
+                          <span className="text-[11px] text-red-600 dark:text-red-400 font-bold block">{daysOverdue} {language === 'ar' ? 'يوم تأخير' : 'days overdue'}</span>
                         )}
                       </td>
-
-                      <td className="p-4 text-end font-bold text-najdi-900 dark:text-cream-50">
-                        {formatSAR(p.totalAmount, language)}
-                      </td>
-
-                      <td className="p-4 text-end font-semibold text-najdi-800 dark:text-sand-300">
-                        {formatSAR(p.paidAmount, language)}
-                      </td>
-
-                      <td className="p-4 text-end font-semibold text-bronze-600 dark:text-bronze-400">
-                        {formatSAR(p.remainingAmount, language)}
-                      </td>
-
+                      <td className="p-4 text-end font-bold text-najdi-900 dark:text-cream-50">{formatSAR(p.totalAmount, language)}</td>
+                      <td className="p-4 text-end font-semibold text-najdi-800 dark:text-sand-300">{formatSAR(p.paidAmount, language)}</td>
+                      <td className="p-4 text-end font-semibold text-bronze-600 dark:text-bronze-400">{formatSAR(p.remainingAmount, language)}</td>
                       <td className="p-4 text-center">
-                        <Badge
-                          variant={
-                            isPaid
-                              ? 'sand'
-                              : isOverdue
-                              ? 'danger'
-                              : 'bronze'
-                          }
-                          size="sm"
-                        >
-                          {isPaid
-                            ? (language === 'ar' ? 'تم السداد' : 'Paid')
-                            : isOverdue
-                            ? (language === 'ar' ? 'متأخر' : 'Overdue')
-                            : (language === 'ar' ? 'مستحق' : 'Pending')}
+                        <Badge variant={isPaid ? 'sand' : isOverdue ? 'danger' : 'bronze'} size="sm">
+                          {isPaid ? (language === 'ar' ? 'تم السداد' : 'Paid') : isOverdue ? (language === 'ar' ? 'متأخر' : 'Overdue') : (language === 'ar' ? 'مستحق' : 'Pending')}
                         </Badge>
                       </td>
-
                       <td className="p-4 text-center">
                         <div className="flex items-center justify-center gap-1.5">
                           {isAdmin && !isPaid && (
-                            <button
-                              onClick={() => setRecordingInstallment(p)}
-                              className="px-3 py-1.5 rounded-xl bg-sand-500 hover:bg-sand-600 text-najdi-900 text-xs font-bold transition-all shadow-xs"
-                            >
+                            <button onClick={() => setRecordingInstallment(p)} className="px-3 py-1.5 rounded-xl bg-sand-500 hover:bg-sand-600 text-najdi-900 text-xs font-bold transition-all shadow-xs">
                               {language === 'ar' ? 'تسجيل سداد' : 'Record Payment'}
                             </button>
                           )}
                           {!isPaid && (
-                            <button
-                              onClick={() => handleOpenEmailNotice(p)}
-                              className="p-1.5 rounded-lg text-sand-500 hover:text-brand-600 hover:bg-cream-100 dark:hover:bg-najdi-800 transition-colors"
-                              title={language === 'ar' ? 'إرسال إشعار تذكير بالسداد' : 'Send Payment Reminder Email'}
-                            >
+                            <button onClick={() => handleOpenEmailNotice(p)} className="p-1.5 rounded-lg text-sand-500 hover:text-brand-600 hover:bg-cream-100 dark:hover:bg-najdi-800 transition-colors" title={language === 'ar' ? 'إرسال إشعار تذكير بالسداد' : 'Send Payment Reminder Email'}>
                               <Mail className="h-4 w-4" />
                             </button>
                           )}
                           {p.paidAmount > 0 && (
-                            <button
-                              onClick={() => setVoucherInstallment(p)}
-                              className="p-1.5 rounded-lg text-sand-500 hover:text-najdi-900 dark:hover:text-cream-100 hover:bg-cream-100 dark:hover:bg-najdi-800 transition-colors"
-                              title={language === 'ar' ? 'سند قبض' : 'Receipt Voucher'}
-                            >
+                            <button onClick={() => setVoucherInstallment(p)} className="p-1.5 rounded-lg text-sand-500 hover:text-najdi-900 dark:hover:text-cream-100 hover:bg-cream-100 dark:hover:bg-najdi-800 transition-colors" title={language === 'ar' ? 'سند قبض' : 'Receipt Voucher'}>
                               <Printer className="h-4 w-4" />
                             </button>
                           )}
@@ -368,6 +318,101 @@ export const PaymentList: React.FC<PaymentListProps> = ({ onNavigate, selectedIn
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile Card List */}
+        <div className="md:hidden divide-y divide-cream-200 dark:divide-najdi-800">
+          {filteredPayments.length === 0 ? (
+            <div className="p-10 text-center text-sand-400 flex flex-col items-center gap-2">
+              <DollarSign className="h-8 w-8 text-sand-300 dark:text-najdi-700" />
+              <p className="text-xs">{language === 'ar' ? 'لا توجد دفعات مسجلة' : 'No payments found.'}</p>
+            </div>
+          ) : (
+            filteredPayments.map(p => {
+              const tenant = tenants.find(t => t.id === p.tenantId);
+              const office = offices.find(o => o.id === p.officeId);
+              const daysOverdue = calculateDaysOverdue(p.dueDate, effectiveDate);
+              const isOverdue = p.remainingAmount > 0 && daysOverdue > 0;
+              const isPaid = p.remainingAmount === 0;
+
+              return (
+                <div key={p.id} className={`p-4 space-y-3 ${isOverdue ? 'bg-red-50/30 dark:bg-red-950/10' : ''}`}>
+                  {/* Top row: invoice + status badge */}
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <p className="font-mono font-bold text-sm text-najdi-900 dark:text-cream-50">{p.invoiceNumber}</p>
+                      <p className="text-[11px] text-sand-400">{p.periodLabel}</p>
+                    </div>
+                    <Badge variant={isPaid ? 'sand' : isOverdue ? 'danger' : 'bronze'} size="sm">
+                      {isPaid ? (language === 'ar' ? 'تم السداد' : 'Paid') : isOverdue ? (language === 'ar' ? 'متأخر' : 'Overdue') : (language === 'ar' ? 'مستحق' : 'Pending')}
+                    </Badge>
+                  </div>
+
+                  {/* Tenant + Office + Due Date */}
+                  <div className="flex items-center justify-between text-xs">
+                    <div>
+                      <p className="font-bold text-najdi-900 dark:text-cream-100">{tenant?.name || 'N/A'}</p>
+                      <p className="text-sand-500">{language === 'ar' ? `وحدة: ${office?.officeNumber || 'N/A'}` : `Unit: ${office?.officeNumber || 'N/A'}`}</p>
+                    </div>
+                    <div className="text-end">
+                      <p className="font-semibold text-najdi-800 dark:text-cream-200">{formatDate(p.dueDate, 'dd/MM/yyyy')}</p>
+                      {isOverdue && (
+                        <p className="text-[11px] text-red-600 dark:text-red-400 font-bold">{daysOverdue} {language === 'ar' ? 'يوم تأخير' : 'days overdue'}</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Amounts */}
+                  <div className="grid grid-cols-3 gap-2 bg-cream-50 dark:bg-najdi-950 rounded-xl p-3">
+                    <div className="text-center">
+                      <p className="text-[10px] text-sand-400 uppercase">{language === 'ar' ? 'الإجمالي' : 'Total'}</p>
+                      <p className="font-bold text-xs text-najdi-900 dark:text-cream-50">{formatSAR(p.totalAmount, language)}</p>
+                    </div>
+                    <div className="text-center border-x border-cream-200 dark:border-najdi-800">
+                      <p className="text-[10px] text-sand-400 uppercase">{language === 'ar' ? 'المحصل' : 'Paid'}</p>
+                      <p className="font-bold text-xs text-emerald-700 dark:text-emerald-400">{formatSAR(p.paidAmount, language)}</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-[10px] text-sand-400 uppercase">{language === 'ar' ? 'المتبقي' : 'Remaining'}</p>
+                      <p className={`font-bold text-xs ${isOverdue ? 'text-red-600 dark:text-red-400' : 'text-bronze-600 dark:text-bronze-400'}`}>{formatSAR(p.remainingAmount, language)}</p>
+                    </div>
+                  </div>
+
+                  {/* Action Buttons */}
+                  {(isAdmin || p.paidAmount > 0 || !isPaid) && (
+                    <div className="flex items-center gap-2 pt-1">
+                      {isAdmin && !isPaid && (
+                        <button
+                          onClick={() => setRecordingInstallment(p)}
+                          className="flex-1 py-2.5 rounded-xl bg-sand-500 hover:bg-sand-600 active:bg-sand-700 text-najdi-900 text-xs font-bold transition-all shadow-xs"
+                        >
+                          {language === 'ar' ? 'تسجيل سداد' : 'Record Payment'}
+                        </button>
+                      )}
+                      {!isPaid && (
+                        <button
+                          onClick={() => handleOpenEmailNotice(p)}
+                          className="p-2.5 rounded-xl bg-cream-100 dark:bg-najdi-800 text-sand-600 hover:text-brand-600 border border-cream-200 dark:border-najdi-700 transition-colors"
+                          title={language === 'ar' ? 'إشعار بريدي' : 'Email Notice'}
+                        >
+                          <Mail className="h-4 w-4" />
+                        </button>
+                      )}
+                      {p.paidAmount > 0 && (
+                        <button
+                          onClick={() => setVoucherInstallment(p)}
+                          className="p-2.5 rounded-xl bg-cream-100 dark:bg-najdi-800 text-sand-600 hover:text-najdi-900 border border-cream-200 dark:border-najdi-700 transition-colors"
+                          title={language === 'ar' ? 'سند قبض' : 'Receipt'}
+                        >
+                          <Printer className="h-4 w-4" />
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })
+          )}
         </div>
       </div>
 

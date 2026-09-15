@@ -142,7 +142,7 @@ export const AccruedRentalView: React.FC = () => {
             <span>{t('accrued_rental')}</span>
           </h2>
           <p className="text-xs text-sand-500 dark:text-sand-400 mt-1">
-            {language === 'ar' ? 'تقرير الإيراد الإيجاري المستحق والاعتراف بالإيراد لبرج العبداللطيف' : 'Accrual accounting revenue recognition earned up to the specified cut-off date for Alabdullatif Tower'}
+            {language === 'ar' ? 'تقرير الإيراد الإيجاري المستحق والاعتراف بالإيراد في مركز العبداللطيف' : 'Accrual accounting revenue recognition earned up to the specified cut-off date for Alabdullatif Center'}
           </p>
         </div>
 

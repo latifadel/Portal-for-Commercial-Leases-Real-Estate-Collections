@@ -108,7 +108,7 @@ export const OfficeList: React.FC<OfficeListProps> = ({ onNavigate, selectedOffi
             </span>
           </h2>
           <p className="text-xs text-sand-500 dark:text-sand-400 mt-1">
-            {language === 'ar' ? 'سجل الوحدات والمكاتب ببرج العبداللطيف، حالة الإشغال والمساحات' : 'Floor-by-floor commercial unit directory, occupancy state, and space specifications for Alabdullatif Tower'}
+            {language === 'ar' ? 'سجل الوحدات والمكاتب في مركز العبداللطيف، حالة الإشغال والمساحات' : 'Floor-by-floor commercial unit directory, occupancy state, and space specifications for Alabdullatif Center'}
           </p>
         </div>
 

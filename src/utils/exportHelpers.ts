@@ -230,7 +230,7 @@ export function exportToPDF(params: {
       // Bottom footer bar
       doc.setFontSize(7);
       doc.setTextColor(140, 115, 95);
-      const footerText = `Alabdullatif Tower Commercial Property Management • Confidential Financial Statement • Page ${dataInfo.pageNumber} of ${doc.getNumberOfPages()}`;
+      const footerText = `Alabdullatif Center – Commercial Property Management • Confidential Financial Statement • Page ${dataInfo.pageNumber} of ${doc.getNumberOfPages()}`;
       doc.text(footerText, pageWidth / 2, pageHeight - 6, { align: 'center' });
     },
   });

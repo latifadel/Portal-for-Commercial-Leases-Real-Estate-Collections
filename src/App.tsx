@@ -24,6 +24,7 @@ import {
   FileText,
   DollarSign,
   TrendingUp,
+  Settings,
   Loader2,
 } from 'lucide-react';
 
@@ -64,6 +65,7 @@ const MainLayout: React.FC = () => {
     { id: 'contracts', label: language === 'ar' ? 'العقود' : 'Contracts', icon: FileText },
     { id: 'payments', label: language === 'ar' ? 'الدفعات' : 'Payments', icon: DollarSign },
     { id: 'reports', label: language === 'ar' ? 'التقارير' : 'Reports', icon: TrendingUp },
+    { id: 'settings', label: language === 'ar' ? 'الإعدادات' : 'Settings', icon: Settings },
   ];
 
   return (
@@ -129,7 +131,10 @@ const MainLayout: React.FC = () => {
       </div>
 
       {/* iPhone / Mobile Bottom Bar - Deep Najdi Dark Brown */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-30 bg-najdi-950/95 backdrop-blur-md border-t border-najdi-800 px-2 py-2 flex items-center justify-around shadow-2xl">
+      <div
+        className="lg:hidden fixed bottom-0 left-0 right-0 z-30 bg-najdi-950/96 backdrop-blur-md border-t border-najdi-800 flex items-center justify-around shadow-2xl"
+        style={{ paddingBottom: 'env(safe-area-inset-bottom)', paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)' }}
+      >
         {mobileNavItems.map(item => {
           const Icon = item.icon;
           const isActive = currentView === item.id;
@@ -137,14 +142,17 @@ const MainLayout: React.FC = () => {
             <button
               key={item.id}
               onClick={() => handleNavigate(item.id)}
-              className={`flex flex-col items-center justify-center p-1 rounded-xl transition-all ${
+              className={`flex flex-col items-center justify-center py-3 px-2 flex-1 relative transition-all ${
                 isActive
-                  ? 'text-brand-400 font-bold scale-105'
-                  : 'text-sand-400 hover:text-cream-50'
+                  ? 'text-brand-400 font-bold'
+                  : 'text-sand-400 hover:text-cream-50 active:text-sand-200'
               }`}
             >
+              {isActive && (
+                <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 rounded-full bg-brand-400" />
+              )}
               <Icon className="h-5 w-5" />
-              <span className="text-[10px] mt-0.5">{item.label}</span>
+              <span className="text-[10px] mt-0.5 leading-tight">{item.label}</span>
             </button>
           );
         })}

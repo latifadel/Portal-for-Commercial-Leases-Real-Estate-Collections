@@ -189,7 +189,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {(!isCollapsed || isMobileOpen) && (
             <div className="space-y-0.5">
               <p className="font-serif text-bronze-300 font-bold text-xs tracking-wide">
-                برج العبداللطيف التجاري
+                مركز العبداللطيف
               </p>
               <p className="text-[10px] text-sand-400/80">
                 الرياض • المملكة العربية السعودية

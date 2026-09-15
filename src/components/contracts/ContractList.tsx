@@ -101,7 +101,7 @@ export const ContractList: React.FC<ContractListProps> = ({ onNavigate, selected
             </span>
           </h2>
           <p className="text-xs text-sand-500 dark:text-sand-400 mt-1">
-            {language === 'ar' ? 'سجل عقود الإيجار، مدد العقود، والدفعات لبرج العبداللطيف' : 'Lease agreements, contract durations, and payment schedules for Alabdullatif Tower'}
+            {language === 'ar' ? 'سجل عقود الإيجار، مدد العقود، والدفعات في مركز العبداللطيف' : 'Lease agreements, contract durations, and payment schedules for Alabdullatif Center'}
           </p>
         </div>
 

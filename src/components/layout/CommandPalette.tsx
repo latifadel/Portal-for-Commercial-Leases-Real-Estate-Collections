@@ -177,7 +177,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose,
           {query.trim() === '' ? (
             <div className="p-8 text-center text-sand-400 text-sm">
               <Search className="h-8 w-8 mx-auto mb-2 opacity-40 text-brand-600" />
-              <p>{language === 'ar' ? 'اكتب للبحث في مستأجري برج العبداللطيف، الوحدات، العقود، والفواتير...' : 'Search across Alabdullatif Tower tenants, offices, contracts, and invoices...'}</p>
+              <p>{language === 'ar' ? 'اكتب للبحث في مستأجري مركز العبداللطيف، الوحدات، العقود، والفواتير...' : 'Search across Alabdullatif Center tenants, offices, contracts, and invoices...'}</p>
             </div>
           ) : searchResults.length === 0 ? (
             <div className="p-8 text-center text-sand-400 text-sm">

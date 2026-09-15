@@ -307,7 +307,7 @@ export const LoginView: React.FC = () => {
             <span>{language === 'ar' ? 'سحابي متزامن عبر Supabase • مشفر ومحمي' : 'Encrypted & Real-time Cloud Sync via Supabase'}</span>
           </div>
           <p className="text-[10px] text-sand-600">
-            برج العبداللطيف • الرياض، المملكة العربية السعودية
+            مركز العبداللطيف • الرياض، المملكة العربية السعودية
           </p>
         </div>
       </div>

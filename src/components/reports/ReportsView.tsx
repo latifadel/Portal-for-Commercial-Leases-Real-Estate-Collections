@@ -314,7 +314,7 @@ export const ReportsView: React.FC = () => {
   // --- 4. Master PDF Export (A4 Landscape) ---
   const handleExportMasterPDF = () => {
     const todayDate = new Date().toISOString().split('T')[0];
-    const bName = settings.buildingName || 'Alabdullatif Tower';
+    const bName = settings.buildingName || 'Alabdullatif Center';
 
     const pdfData = filteredStatementRows.map((r, i) => ({
       index: i + 1,
@@ -386,7 +386,7 @@ export const ReportsView: React.FC = () => {
   // --- 5. Excel Export ---
   const handleExportExcel = () => {
     const todayDate = new Date().toISOString().split('T')[0];
-    const bName = settings.buildingName || 'Alabdullatif Tower';
+    const bName = settings.buildingName || 'Alabdullatif Center';
 
     if (activeTab === 'TENANT_STATEMENT') {
       const excelData = filteredStatementRows.map((r, i) => ({
@@ -561,8 +561,8 @@ export const ReportsView: React.FC = () => {
       <div className="rounded-3xl border border-sand-300 dark:border-najdi-800 bg-white dark:bg-najdi-900 p-6 sm:p-8 shadow-sm relative overflow-hidden">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
           <div className="space-y-2">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sand-100 dark:bg-najdi-950 border border-sand-300 dark:border-najdi-800 text-najdi-800 dark:text-sand-300 text-xs font-semibold">
-              <span>{language === 'ar' ? 'برج العبداللطيف التجاري لإدارة الأملاك' : 'Alabdullatif Tower Commercial Property Management'}</span>
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sand-100 dark:bg-najdi-950 border border-sand-300 dark:border-najdi-800 text-najdi-800 dark:text-sand-300 text-xs font-semibold flex-wrap">
+              <span>{language === 'ar' ? 'مركز العبداللطيف لإدارة الأملاك' : 'Alabdullatif Center – Property Management'}</span>
               <span>•</span>
               <span>{language === 'ar' ? 'الرياض، المملكة العربية السعودية' : 'Riyadh, KSA'}</span>
             </div>
@@ -728,48 +728,50 @@ export const ReportsView: React.FC = () => {
       {/* ============================================================
           NAVIGATION TABS
          ============================================================ */}
-      <div className="flex items-center gap-2 border-b border-cream-300 dark:border-najdi-800 pb-2">
-        <button
-          onClick={() => setActiveTab('TENANT_STATEMENT')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
-            activeTab === 'TENANT_STATEMENT'
-              ? 'bg-sand-500 text-najdi-900 shadow-sm'
-              : 'text-sand-600 dark:text-sand-400 hover:bg-cream-100 dark:hover:bg-najdi-800'
-          }`}
-        >
-          <FileSpreadsheet className="h-4 w-4" />
-          <span>{language === 'ar' ? 'بيان عقود وتحصيلات المستأجرين' : 'Tenant Leases Statement'}</span>
-          <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-sand-200 dark:bg-najdi-950 text-najdi-900 font-bold">
-            {contracts.length}
-          </span>
-        </button>
+      <div className="overflow-x-auto -mx-1 px-1">
+        <div className="flex items-center gap-2 border-b border-cream-300 dark:border-najdi-800 pb-2 min-w-max">
+          <button
+            onClick={() => setActiveTab('TENANT_STATEMENT')}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+              activeTab === 'TENANT_STATEMENT'
+                ? 'bg-sand-500 text-najdi-900 shadow-sm'
+                : 'text-sand-600 dark:text-sand-400 hover:bg-cream-100 dark:hover:bg-najdi-800'
+            }`}
+          >
+            <FileSpreadsheet className="h-4 w-4" />
+            <span>{language === 'ar' ? 'بيان عقود وتحصيلات المستأجرين' : 'Tenant Leases Statement'}</span>
+            <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-sand-200 dark:bg-najdi-950 text-najdi-900 font-bold">
+              {contracts.length}
+            </span>
+          </button>
 
-        <button
-          onClick={() => setActiveTab('PAYMENT_SCHEDULE')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
-            activeTab === 'PAYMENT_SCHEDULE'
-              ? 'bg-sand-500 text-najdi-900 shadow-sm'
-              : 'text-sand-600 dark:text-sand-400 hover:bg-cream-100 dark:hover:bg-najdi-800'
-          }`}
-        >
-          <Calendar className="h-4 w-4" />
-          <span>{language === 'ar' ? 'جدول استحقاق الدفعات والتحصيلات' : 'Payment Schedule & Collections'}</span>
-          <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-sand-200 dark:bg-najdi-950 text-najdi-900 font-bold">
-            {payments.length}
-          </span>
-        </button>
+          <button
+            onClick={() => setActiveTab('PAYMENT_SCHEDULE')}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+              activeTab === 'PAYMENT_SCHEDULE'
+                ? 'bg-sand-500 text-najdi-900 shadow-sm'
+                : 'text-sand-600 dark:text-sand-400 hover:bg-cream-100 dark:hover:bg-najdi-800'
+            }`}
+          >
+            <Calendar className="h-4 w-4" />
+            <span>{language === 'ar' ? 'جدول استحقاق الدفعات والتحصيلات' : 'Payment Schedule & Collections'}</span>
+            <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-sand-200 dark:bg-najdi-950 text-najdi-900 font-bold">
+              {payments.length}
+            </span>
+          </button>
 
-        <button
-          onClick={() => setActiveTab('MONTHLY_CASHFLOW')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
-            activeTab === 'MONTHLY_CASHFLOW'
-              ? 'bg-sand-500 text-najdi-900 shadow-sm'
-              : 'text-sand-600 dark:text-sand-400 hover:bg-cream-100 dark:hover:bg-najdi-800'
-          }`}
-        >
-          <TrendingUp className="h-4 w-4" />
-          <span>{language === 'ar' ? 'التدفقات الشهرية ونسبة الإشغال' : 'Monthly Cashflow & Occupancy'}</span>
-        </button>
+          <button
+            onClick={() => setActiveTab('MONTHLY_CASHFLOW')}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+              activeTab === 'MONTHLY_CASHFLOW'
+                ? 'bg-sand-500 text-najdi-900 shadow-sm'
+                : 'text-sand-600 dark:text-sand-400 hover:bg-cream-100 dark:hover:bg-najdi-800'
+            }`}
+          >
+            <TrendingUp className="h-4 w-4" />
+            <span>{language === 'ar' ? 'التدفقات الشهرية ونسبة الإشغال' : 'Monthly Cashflow & Occupancy'}</span>
+          </button>
+        </div>
       </div>
 
       {/* ============================================================

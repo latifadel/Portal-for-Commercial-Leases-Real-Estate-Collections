@@ -137,8 +137,8 @@ export const SettingsView: React.FC = () => {
         </h2>
         <p className="text-xs text-sand-500 dark:text-sand-400 mt-1">
           {language === 'ar'
-            ? 'بيانات برج العبداللطيف، نسبة الضريبة، التخزين المحلي، وإعدادات إشعارات البريد'
-            : 'Alabdullatif Tower credentials, ZATCA VAT rates, local storage, and email notifications'}
+            ? 'بيانات مركز العبداللطيف، نسبة الضريبة، التخزين المحلي، وإعدادات إشعارات البريد'
+            : 'Alabdullatif Center credentials, ZATCA VAT rates, local storage, and email notifications'}
         </p>
       </div>
 
@@ -400,8 +400,8 @@ export const SettingsView: React.FC = () => {
         </h3>
         <p className="text-xs text-sand-500 dark:text-sand-400">
           {language === 'ar'
-            ? 'يمكنك تنزيل نسخة احتياطية كاملة لبيانات برج العبداللطيف أو مشاركتها لنقل البيانات بين الهاتف والكمبيوتر بسهولة تامة.'
-            : 'Download or restore full Alabdullatif Tower database backup to easily transfer data between phone and computer.'}
+            ? 'يمكنك تنزيل نسخة احتياطية كاملة لبيانات مركز العبداللطيف أو مشاركتها لنقل البيانات بين الهاتف والكمبيوتر بسهولة تامة.'
+            : 'Download or restore full Alabdullatif Center database backup to easily transfer data between phone and computer.'}
         </p>
 
         <div className="flex flex-wrap items-center gap-3 pt-2">

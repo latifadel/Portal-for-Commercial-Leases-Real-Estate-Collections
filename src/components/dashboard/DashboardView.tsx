@@ -131,7 +131,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
   // Master PDF Download Handler
   const handleExportPDF = () => {
     const todayDate = new Date().toISOString().split('T')[0];
-    const bName = 'Alabdullatif Tower - برج العبداللطيف';
+    const bName = 'Alabdullatif Center - مركز العبداللطيف';
 
     const totalWithVAT = contracts.reduce((s, c) => s + c.totalRent, 0);
     const totalBaseRent = contracts.reduce((s, c) => s + c.baseRent, 0);
@@ -229,13 +229,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
             </div>
 
             <h1 className="text-2xl sm:text-3xl font-serif font-bold text-cream-50 tracking-tight">
-              {language === 'ar' ? 'برج العبداللطيف التجاري' : 'Alabdullatif Tower'}
+              {language === 'ar' ? 'مركز العبداللطيف' : 'Alabdullatif Center'}
             </h1>
 
             <p className="text-xs sm:text-sm text-sand-300 max-w-xl leading-relaxed">
               {language === 'ar'
                 ? 'متابعة نسبة الإشغال، عقود الإيجار، التحصيلات المالية، والمتأخرات وفق أعلى معايير الحوكمة العقارية.'
-                : 'Real-time occupancy tracking, tenant contracts, VAT-compliant rent collections, and arrears.'}
+                : 'Real-time occupancy tracking, tenant contracts, VAT-compliant rent collections, and arrears management.'}
             </p>
           </div>
 
@@ -271,7 +271,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
             </div>
             <div>
               <h3 className="text-base font-serif font-bold text-najdi-900 dark:text-cream-50">
-                {language === 'ar' ? 'مرحباً بك في نظام برج العبداللطيف' : 'Welcome to Alabdullatif Tower Management'}
+                {language === 'ar' ? 'مرحباً بك في نظام مركز العبداللطيف' : 'Welcome to Alabdullatif Center Management'}
               </h3>
               <p className="text-xs text-sand-500">
                 {language === 'ar'

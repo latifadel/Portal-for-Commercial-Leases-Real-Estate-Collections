@@ -74,7 +74,7 @@ export const TenantList: React.FC<TenantListProps> = ({ onNavigate, selectedTena
             </span>
           </h2>
           <p className="text-xs text-sand-500 dark:text-sand-400 mt-1">
-            {language === 'ar' ? 'سجل مستأجري برج العبداللطيف والعقود المرتبطة' : 'Alabdullatif Tower tenant directory and linked lease agreements'}
+            {language === 'ar' ? 'سجل مستأجري مركز العبداللطيف والعقود المرتبطة' : 'Alabdullatif Center tenant directory and linked lease agreements'}
           </p>
         </div>
 

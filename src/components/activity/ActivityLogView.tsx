@@ -78,7 +78,7 @@ export const ActivityLogView: React.FC = () => {
           <span>{t('activity_log')} & Audit Trail</span>
         </h2>
         <p className="text-xs text-sand-500 dark:text-sand-400 mt-1">
-          {language === 'ar' ? 'سجل العمليات والتغييرات لبرج العبداللطيف' : 'Immutable chronological ledger of all property changes, financial transactions, and user mutations'}
+          {language === 'ar' ? 'سجل العمليات والتغييرات في مركز العبداللطيف' : 'Immutable chronological ledger of all property changes, financial transactions, and user mutations'}
         </p>
       </div>
 
